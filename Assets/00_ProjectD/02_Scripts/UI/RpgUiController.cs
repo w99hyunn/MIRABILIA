@@ -28,6 +28,11 @@ namespace DoHwa.UI
         private RectTransform minimapMarker;
         private TMP_Text title, category, description, count, actionLabel, healthLabel, foodLabel, feedback;
         private UnityEngine.UI.Image detailArt;
+        [SerializeField] private GameObject quickMenu;
+        [SerializeField] private UnityEngine.UI.Image activeTool;
+        [SerializeField] private TMP_Text[] quickNames;
+        private GameObject bagDetail, craftingStage;
+        private UnityEngine.UI.Image craftingPreview;
         private UiGaugeMotion healthMotion, foodMotion;
         private UnityEngine.UI.Button action;
         private RpgItemButton[] slots, quickSlots;
@@ -35,7 +40,7 @@ namespace DoHwa.UI
         private bool crafting, wasMotorEnabled, wasViewEnabled, modal;
         private float health = 80, food = 75, feedbackUntil;
         private readonly int[] quickItems = { 0, 1, 2, 3, 4, 6, 7, 9 };
-        private InputAction bagKey, craftKey, mapKey, journalKey, escapeKey, equipmentKey, wardrobeKey;
+        private InputAction bagKey, craftKey, mapKey, journalKey, escapeKey, equipmentKey, wardrobeKey, quickMenuKey;
         private InputAction[] quickKeys;
         private int transition;
         private int sortOrder;
@@ -100,6 +105,9 @@ namespace DoHwa.UI
         public void Bind()
         {
             inventory = transform.Find("Inventory").gameObject;
+            bagDetail = inventory.transform.Find("Detail").gameObject;
+            craftingStage = inventory.transform.Find("CraftingStage").gameObject;
+            craftingStage.transform.Find("Preview").TryGetComponent<UnityEngine.UI.Image>(out craftingPreview);
             map = transform.Find("Map").gameObject;
             journal = transform.Find("Journal").gameObject;
             settings = transform.Find("Settings").gameObject;
@@ -136,6 +144,7 @@ namespace DoHwa.UI
             journalKey=new InputAction("Journal",InputActionType.Button,"<Keyboard>/j");
             escapeKey=new InputAction("Close",InputActionType.Button,"<Keyboard>/escape");
             wardrobeKey=new InputAction("Wardrobe",InputActionType.Button,"<Keyboard>/v");
+            quickMenuKey=new InputAction("Quick menu",InputActionType.Button,"<Keyboard>/q");
             equipmentKey=new InputAction("Equipment",InputActionType.Button,"<Keyboard>/k");
             quickKeys=Enumerable.Range(1,8).Select(i=>new InputAction("Quick"+i,InputActionType.Button,"<Keyboard>/"+i)).ToArray();
         }
@@ -143,6 +152,7 @@ namespace DoHwa.UI
         private void OnEnable()
         {
             bagKey.Enable(); craftKey.Enable(); mapKey.Enable(); journalKey.Enable(); escapeKey.Enable(); equipmentKey.Enable(); wardrobeKey.Enable();
+            quickMenuKey.Enable();
             foreach(var key in quickKeys) key.Enable();
         }
 
@@ -187,6 +197,7 @@ namespace DoHwa.UI
         private void OnDisable()
         {
             bagKey.Disable(); craftKey.Disable(); mapKey.Disable(); journalKey.Disable(); escapeKey.Disable(); equipmentKey.Disable(); wardrobeKey.Disable();
+            quickMenuKey.Disable();
             foreach(var key in quickKeys) key.Disable();
             if(modal) RestoreMovement();
         }
@@ -194,6 +205,7 @@ namespace DoHwa.UI
         private void OnDestroy()
         {
             bagKey.Dispose(); craftKey.Dispose(); mapKey.Dispose(); journalKey.Dispose(); escapeKey.Dispose(); equipmentKey.Dispose(); wardrobeKey.Dispose();
+            quickMenuKey.Dispose();
             foreach(var key in quickKeys) key.Dispose();
         }
 
@@ -212,7 +224,8 @@ namespace DoHwa.UI
             if(craftKey.WasPressedThisFrame()) { if(inventory.activeSelf && crafting) Close(); else OpenCrafting(); }
             if(mapKey.WasPressedThisFrame()) { if(map.activeSelf) Close(); else OpenMap(); }
             if(journalKey.WasPressedThisFrame()) { if(journal.activeSelf) Close(); else OpenJournal(); }
-            if(escapeKey.WasPressedThisFrame()) { if(modal) Close(); else OpenSettings(); }
+            if (!modal && quickMenuKey.WasPressedThisFrame()) ToggleQuickMenu();
+            if(escapeKey.WasPressedThisFrame()) { if(quickMenu.activeSelf) ToggleQuickMenu(); else if(modal) Close(); else OpenSettings(); }
             if(!modal) for(int i=0;i<quickKeys.Length;i++) if(quickKeys[i].WasPressedThisFrame()) UseQuick(i);
             if(feedback.transform.parent.gameObject.activeSelf && Time.unscaledTime>feedbackUntil) feedback.transform.parent.gameObject.SetActive(false);
         }
@@ -228,6 +241,7 @@ namespace DoHwa.UI
 
         private async void Show(GameObject panel)
         {
+            quickMenu.SetActive(false);
             if(!menusReady)await PrepareMenusAsync();
             bool alreadyOpen = panel.activeSelf;
             if(alreadyOpen && modal && panel.TryGetComponent<UiPanelReveal>(out var panelMotion) && !panelMotion.IsLeaving)return;
@@ -297,7 +311,15 @@ namespace DoHwa.UI
             if(modal) RestoreMovement();
         }
 
-        public void OpenInventory() { equipmentMode=false; crafting=false; filter=0; Show(inventory); Select(0); ResetInventoryScroll(); }
+        public void OpenInventory()
+        {
+            equipmentMode = crafting = false;
+            filter = selected = 0;
+            bagDetail.SetActive(false);
+            Show(inventory);
+            Refresh();
+            ResetInventoryScroll();
+        }
         public void OpenCrafting() { equipmentMode=false; crafting=true; filter=0; Show(inventory); Select(3); ResetInventoryScroll(); }
         public void OpenEquipment() { equipmentMode=true;crafting=false;filter=0;selectedPart=0;selected=loadout[0]>=0?loadout[0]:0;Show(character);Refresh(); }
         public void SelectEquipmentPart(int part) { bool changed=selectedPart!=part;selectedPart=part;if(loadout[part]>=0)selected=loadout[part];Refresh();if(changed && character.TryGetComponent<UiPanelReveal>(out var reveal))reveal.RefreshContent(2); }
@@ -310,8 +332,26 @@ namespace DoHwa.UI
             Show(settings);
         }
         public void SetVolume(float value) => AudioListener.volume=value;
-        public void SetFilter(int value) { bool changed=filter!=value || crafting;equipmentMode=false;filter=value; crafting=false; Refresh(); ResetInventoryScroll();if(changed && inventory.TryGetComponent<UiPanelReveal>(out var reveal))reveal.RefreshContent(1); }
-        public void Select(int index) { bool changed=selected!=index;selected=index;if(equipmentMode)selectedPart=(int)items[index].equipmentPart; Refresh();var panel=equipmentMode?character:inventory;if(changed && panel.TryGetComponent<UiPanelReveal>(out var reveal))reveal.RefreshContent(2); }
+        public void SetFilter(int value)
+        {
+            bool changed = filter != value || crafting;
+            equipmentMode = crafting = false;
+            filter = value;
+            if (changed) bagDetail.SetActive(false);
+            Refresh();
+            ResetInventoryScroll();
+            if (changed && inventory.TryGetComponent<UiPanelReveal>(out var reveal)) reveal.RefreshContent(1);
+        }
+        public void Select(int index)
+        {
+            bool changed = selected != index || (!equipmentMode && !bagDetail.activeSelf);
+            selected = index;
+            if (equipmentMode) selectedPart = (int)items[index].equipmentPart;
+            else bagDetail.SetActive(true);
+            Refresh();
+            var panel = equipmentMode ? character : inventory;
+            if (changed && panel.TryGetComponent<UiPanelReveal>(out var reveal)) reveal.RefreshContent(2);
+        }
         public void ShowQuickTooltip(int index)
         {
             var item=items[quickItems[index]];
@@ -328,8 +368,16 @@ namespace DoHwa.UI
         public void Sort() => sortMenu.Toggle();
         public void SetSort(int order) { sortOrder=order; Refresh(); ResetInventoryScroll(); }
 
+        public void ToggleQuickMenu()
+        {
+            HideQuickTooltip();
+            quickMenu.SetActive(!quickMenu.activeSelf);
+        }
+
         public void UseQuick(int index)
         {
+            quickMenu.SetActive(false);
+            HideQuickTooltip();
             equipmentMode=false;crafting=false;
             quickSelected=index; selected=quickItems[index];
             if(selected==2 || selected==3 || selected==7) UseSelected();
@@ -417,10 +465,18 @@ namespace DoHwa.UI
             for(int i=0;i<slots.Length;i++)
             {
                 int id=i<visible.Length?visible[i]:-1;
-                slots[i].Show(id,id>=0?items[id].icon:null,id>=0?items[id].quantity:0,id==selected,id>=0&&IsEquipped(id),!crafting&&filter==0);
+                slots[i].Show(id,id>=0?items[id].icon:null,id>=0?items[id].quantity:0,id==selected && bagDetail.activeSelf,id>=0&&IsEquipped(id),!crafting&&filter==0);
             }
-            for(int i=0;i<quickSlots.Length;i++) { int id=quickItems[i]; quickSlots[i].Show(i,items[id].icon,items[id].quantity,i==quickSelected,false); }
+            for(int i=0;i<quickSlots.Length;i++)
+            {
+                var quickItem = items[quickItems[i]];
+                quickNames[i].text = quickItem.title;
+                quickSlots[i].Show(i,quickItem.icon,quickItem.quantity,i==quickSelected,false);
+            }
+            activeTool.sprite = items[SelectedQuickItem].icon;
             var item=items[selected]; title.text=item.title; category.text=crafting?"제작법":item.category;
+            craftingStage.SetActive(crafting);
+            if (crafting) craftingPreview.sprite = item.icon;
             detailArt.sprite=item.icon; detailArt.preserveAspect=true;
             description.text=item.description;
             count.text=crafting ? selected==3?$"필요 재료\n\n약초<pos=240>{items[6].quantity} / 3\n복숭아<pos=240>{items[2].quantity} / 1":$"필요 재료\n\n철광석<pos=240>{items[5].quantity} / 3" : $"보유 수량<pos=240>{item.quantity}";
@@ -479,7 +535,7 @@ namespace DoHwa.UI
                 bool candidate=items[selected].equipmentPart==(EquipmentPart)selectedPart && selected!=id;
                 if(!candidate && id<0) { title.text=EquipmentPanel.PartNames[selectedPart];category.text="장비 부위";description.text="착용한 장비가 없습니다.";count.text="";detailArt.enabled=false;actionLabel.text="장착할 장비 없음";action.interactable=false; }
                 else { detailArt.enabled=true;category.text="장비 / "+EquipmentPanel.PartNames[selectedPart];actionLabel.text=IsEquipped(selected)?"장착 해제":"장착하기";action.interactable=item.quantity>0;count.text=$"보유 수량<pos=240>{item.quantity}"; }
-            } else detailArt.enabled=true;
+            } else detailArt.enabled=!crafting;
         }
     }
 }

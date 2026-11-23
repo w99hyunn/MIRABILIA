@@ -57,10 +57,11 @@ namespace DoHwa.UI
                 animator.ResetTrigger("ItemChanged");
                 animator.Play("Idle",animator.GetLayerIndex("Result emphasis"),0);
             }
-            index=id; art.sprite=sprite; art.enabled=sprite; amount.text=id>=0 && (!quick || quantity>1)?quantity.ToString():"";
+            index=id; art.sprite=sprite; art.enabled=sprite;
+            amount.text=id>=0 && (quantity>1 || (!quick && quantity==0))?quantity.ToString():"";
             border.enabled=!unframed || selected;
             chosen=selected;
-            selectionMarker.enabled=false;
+            selectionMarker.enabled=quick && selected;
             if(!quick) {
                 gameObject.SetActive(id>=0 || showEmpty);
                 cardFace.enabled=quantityBand.enabled=id>=0;
