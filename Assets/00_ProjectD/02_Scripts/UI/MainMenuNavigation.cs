@@ -79,7 +79,7 @@ namespace DoHwa.UI
             leave.SetActive(lobby);
             invite.SetActive(lobby);
             heading.gameObject.SetActive(selecting||joining||lobby);
-            heading.text=lobby?"함께할 친구":joining?"친구와 함께":selecting?"방 만들기":"";
+            heading.text=lobby?"함께할 친구":joining?"친구와 함께":selecting?"월드 선택":"";
         }
     }
 }

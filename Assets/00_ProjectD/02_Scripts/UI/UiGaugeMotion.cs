@@ -24,8 +24,8 @@ namespace DoHwa.UI
         {
             value=Mathf.Clamp01(value);
             if(initialized && Mathf.Approximately(value,target))return;
-            start=initialized?fill.fillAmount:value; target=value;
-            if(!initialized){fill.fillAmount=value;initialized=true;}
+            start=initialized?fill.rectTransform.anchorMax.x:value; target=value;
+            if(!initialized){SetFillWidth(value);initialized=true;}
             valueProgress=0;
             if(isActiveAndEnabled)SyncState();
         }
@@ -37,11 +37,15 @@ namespace DoHwa.UI
         private void OnDidApplyAnimationProperties()
         {
             if(!initialized)return;
-            fill.fillAmount=Mathf.Lerp(start,target,valueProgress);
+            SetFillWidth(Mathf.Lerp(start,target,valueProgress));
             Color color=warnWhenLow && target<=.25f?new Color(1,.39f,.34f):normalColor;
             color=Color.Lerp(color,Color.white,resultPulse);
             color.a*=warningOpacity;
             fill.color=color;
+        }
+        private void SetFillWidth(float fraction)
+        {
+            fill.rectTransform.anchorMax = new Vector2(fraction, 1f);
         }
     }
 }

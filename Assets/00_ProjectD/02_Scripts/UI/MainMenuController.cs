@@ -145,7 +145,7 @@ namespace DoHwa.UI
             members.gameObject.SetActive(false);
             invite.interactable=!busy&&InLobby&&SteamRuntime.Ready;
             leave.interactable=!busy&&InLobby;
-            startLabel.text=busy?"준비 중":InLobby?(ownLobby?"게임 시작":"방장의 시작을 기다리는 중"):"방 생성";
+            startLabel.text=busy?"준비 중":InLobby?(ownLobby?"게임 시작":"방장의 시작을 기다리는 중"):"방 만들기";
             foreach(var row in rows){row.TryGetComponent<Button>(out var b);b.interactable=!busy&&(!InLobby||ownLobby)&&row.Valid;}
         }
         public async void HostRoom()

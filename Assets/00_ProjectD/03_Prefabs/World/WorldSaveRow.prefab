@@ -77,7 +77,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.4, g: 0.43, b: 0.49, a: 1}
+  m_fontColor: {r: 0.44313726, g: 0.40784314, b: 0.32941177, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -96,7 +96,7 @@ MonoBehaviour:
     rgba: 4294967295
   m_fontSize: 19
   m_fontSizeBase: 19
-  m_fontWeight: 400
+  m_fontWeight: 500
   m_enableAutoSizing: 0
   m_fontSizeMin: 19
   m_fontSizeMax: 76
@@ -182,6 +182,7 @@ GameObject:
   - component: {fileID: 8862355218226951675}
   - component: {fileID: 3170598070547900600}
   - component: {fileID: 2431877642876818104}
+  - component: {fileID: 2394286657432715227}
   m_Layer: 0
   m_Name: WorldSaveRow
   m_TagString: Untagged
@@ -232,14 +233,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.88, g: 0.95, b: 1, a: 0.09}
+  m_Color: {r: 0.9098039, g: 0.8862745, b: 0.8117647, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 6b332e548e309df42b87e09412ce46ce, type: 2}
+  m_Sprite: {fileID: 21300000, guid: afbaace32caebb74dad567f457238a2e, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -365,6 +366,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2394286657432715227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2919264341023988139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f7be488091e5e4c9459bf9188d2c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.UI.UiCapsuleSlice
 --- !u!1 &3096000607226855746
 GameObject:
   m_ObjectHideFlags: 0
@@ -442,7 +455,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.19, g: 0.2, b: 0.25, a: 1}
+  m_fontColor: {r: 0.3019608, g: 0.26666668, b: 0.22745098, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -461,7 +474,7 @@ MonoBehaviour:
     rgba: 4294967295
   m_fontSize: 27
   m_fontSizeBase: 27
-  m_fontWeight: 400
+  m_fontWeight: 700
   m_enableAutoSizing: 0
   m_fontSizeMin: 19
   m_fontSizeMax: 76
@@ -542,6 +555,7 @@ GameObject:
   - component: {fileID: 4888789420751101310}
   - component: {fileID: 553236456313184707}
   - component: {fileID: 3985439219745755424}
+  - component: {fileID: 8111611268209135509}
   m_Layer: 0
   m_Name: Selection
   m_TagString: Untagged
@@ -589,14 +603,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.78, g: 0.81, b: 0.91, a: 0.75}
+  m_Color: {r: 0.9254902, g: 0.76862746, b: 0.40392157, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 6b332e548e309df42b87e09412ce46ce, type: 2}
+  m_Sprite: {fileID: 21300000, guid: afbaace32caebb74dad567f457238a2e, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -606,3 +620,15 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 8
+--- !u!114 &8111611268209135509
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5163554263971681984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f7be488091e5e4c9459bf9188d2c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.UI.UiCapsuleSlice

@@ -75530,6 +75530,7 @@ GameObject:
   - component: {fileID: 1007688819}
   - component: {fileID: 1007688821}
   - component: {fileID: 1007688822}
+  - component: {fileID: 1007688823}
   m_Layer: 5
   m_Name: Fill
   m_TagString: Untagged
@@ -75576,8 +75577,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c5bdcb27d197d1b44be5e0e15eea319c, type: 2}
-  m_Type: 3
+  m_Sprite: {fileID: 21300000, guid: afbaace32caebb74dad567f457238a2e, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 0
@@ -75585,7 +75586,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  m_PixelsPerUnitMultiplier: 11.555555
 --- !u!222 &1007688820
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -75635,6 +75636,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1007688823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1007688817}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f7be488091e5e4c9459bf9188d2c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.UI.UiCapsuleSlice
 --- !u!1 &1007982013
 GameObject:
   m_ObjectHideFlags: 0
@@ -90730,6 +90743,7 @@ GameObject:
   - component: {fileID: 1240241389}
   - component: {fileID: 1240241391}
   - component: {fileID: 1240241392}
+  - component: {fileID: 1240241393}
   m_Layer: 5
   m_Name: Fill
   m_TagString: Untagged
@@ -90776,8 +90790,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c5bdcb27d197d1b44be5e0e15eea319c, type: 2}
-  m_Type: 3
+  m_Sprite: {fileID: 21300000, guid: afbaace32caebb74dad567f457238a2e, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 0
@@ -90785,7 +90799,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  m_PixelsPerUnitMultiplier: 11.555555
 --- !u!222 &1240241390
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -90835,6 +90849,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1240241393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1240241387}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f7be488091e5e4c9459bf9188d2c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.UI.UiCapsuleSlice
 --- !u!1 &1241120055
 GameObject:
   m_ObjectHideFlags: 0
@@ -99945,6 +99971,7 @@ GameObject:
   - component: {fileID: 1356637405}
   - component: {fileID: 1356637407}
   - component: {fileID: 1356637406}
+  - component: {fileID: 1356637408}
   m_Layer: 5
   m_Name: FoodTrack
   m_TagString: Untagged
@@ -99993,7 +100020,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 86d41c862e767dd42878f3c18d927e70, type: 3}
+  m_Sprite: {fileID: 21300000, guid: afbaace32caebb74dad567f457238a2e, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -100002,7 +100029,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 5
+  m_PixelsPerUnitMultiplier: 11.555555
 --- !u!222 &1356637407
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -100011,6 +100038,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1356637404}
   m_CullTransparentMesh: 1
+--- !u!114 &1356637408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1356637404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f7be488091e5e4c9459bf9188d2c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.UI.UiCapsuleSlice
 --- !u!1 &1362499389
 GameObject:
   m_ObjectHideFlags: 0
@@ -138799,6 +138838,7 @@ GameObject:
   - component: {fileID: 1973676596}
   - component: {fileID: 1973676598}
   - component: {fileID: 1973676597}
+  - component: {fileID: 1973676599}
   m_Layer: 5
   m_Name: HealthTrack
   m_TagString: Untagged
@@ -138847,7 +138887,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 86d41c862e767dd42878f3c18d927e70, type: 3}
+  m_Sprite: {fileID: 21300000, guid: afbaace32caebb74dad567f457238a2e, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -138856,7 +138896,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 5
+  m_PixelsPerUnitMultiplier: 11.555555
 --- !u!222 &1973676598
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -138865,6 +138905,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1973676595}
   m_CullTransparentMesh: 1
+--- !u!114 &1973676599
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1973676595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f7be488091e5e4c9459bf9188d2c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.UI.UiCapsuleSlice
 --- !u!1 &1973786839
 GameObject:
   m_ObjectHideFlags: 0
