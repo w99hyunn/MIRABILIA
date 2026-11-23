@@ -32,6 +32,7 @@ namespace DoHwa.UI
         [SerializeField] private UnityEngine.UI.Image activeTool;
         [SerializeField] private TMP_Text[] quickNames;
         private GameObject bagDetail, craftingStage;
+        private GameObject equipmentQuantityRow;
         private UnityEngine.UI.Image craftingPreview;
         private UiGaugeMotion healthMotion, foodMotion;
         private UnityEngine.UI.Button action;
@@ -112,6 +113,7 @@ namespace DoHwa.UI
             journal = transform.Find("Journal").gameObject;
             settings = transform.Find("Settings").gameObject;
             character=transform.Find("Character").gameObject;
+            equipmentQuantityRow = character.transform.Find("Detail/QuantityRow").gameObject;
             equipmentPanel=Component<EquipmentPanel>("Character/EquipmentBoard");
             minimapMarker = (RectTransform)transform.Find("HUD/Region/MapFrame/Marker");
             title=Component<TMP_Text>("Inventory/Detail/Title");
@@ -533,6 +535,7 @@ namespace DoHwa.UI
                 Component<TMP_Text>("Inventory/InventorySubheading").text="부위를 선택하거나 아래 소지 장비를 선택하세요";
                 int id=loadout[selectedPart];
                 bool candidate=items[selected].equipmentPart==(EquipmentPart)selectedPart && selected!=id;
+                equipmentQuantityRow.SetActive(candidate || id >= 0);
                 if(!candidate && id<0) { title.text=EquipmentPanel.PartNames[selectedPart];category.text="장비 부위";description.text="착용한 장비가 없습니다.";count.text="";detailArt.enabled=false;actionLabel.text="장착할 장비 없음";action.interactable=false; }
                 else { detailArt.enabled=true;category.text="장비 / "+EquipmentPanel.PartNames[selectedPart];actionLabel.text=IsEquipped(selected)?"장착 해제":"장착하기";action.interactable=item.quantity>0;count.text=$"보유 수량<pos=240>{item.quantity}"; }
             } else detailArt.enabled=!crafting;

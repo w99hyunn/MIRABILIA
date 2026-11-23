@@ -30,6 +30,6 @@ Material:
     m_Ints: []
     m_Floats: []
     m_Colors:
-    - _UvRect: {r: 0.023941068, g: 0.29696134, b: 0.19014734, a: 0.7030387}
+    - _UvRect: {r: 0, g: 0, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
