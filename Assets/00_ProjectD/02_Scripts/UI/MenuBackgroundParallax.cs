@@ -11,13 +11,13 @@ namespace DoHwa.UI
         [SerializeField] private Texture2D sky;
         [SerializeField] private Texture2D island;
         [SerializeField] private Material islandWaterMaterial;
-        [SerializeField] private Texture2D leftPeach;
-        [SerializeField] private Texture2D centerPeach;
-        [SerializeField] private Texture2D rightPeach;
+        [SerializeField] private Animator peachAnimator;
         [SerializeField] private Texture2D windowLight;
         [SerializeField] private Texture2D star;
 
         private static readonly Vector2 ArtworkSize = new(1672f, 941f);
+        private static readonly int PointerLean = Animator.StringToHash("PointerLean");
+        private static readonly int PeachTap = Animator.StringToHash("PeachTap");
         private static readonly Vector2[] StarPositions =
         {
             new(113, 326), new(219, 264), new(330, 125), new(357, 343),
@@ -32,18 +32,13 @@ namespace DoHwa.UI
         private RectTransform layers;
         private RectTransform stars;
         private RectTransform islandMotion;
-        private RectTransform leftPeachMotion;
-        private RectTransform centerPeachMotion;
-        private RectTransform rightPeachMotion;
         private RawImage window;
         private RawImage[] starImages;
         private Camera canvasCamera;
         private Vector2 origin;
         private Vector3 originalScale;
         private Vector2 pointerOffset;
-        private float sway;
         private float tap;
-        private float tapAge;
         private float windowResponse;
 
         private void Awake()
@@ -69,16 +64,12 @@ namespace DoHwa.UI
                 starImages[index].color = Color.clear;
             }
 
-            islandMotion = AddGroup("Floating island", layers);
+            islandMotion = (RectTransform)peachAnimator.transform;
+            islandMotion.SetParent(layers, false);
             RawImage islandImage = AddLayer("Island", islandMotion, island, new Vector2(288, -80),
                 new Vector2(1072, 976), new Vector2(0.5f, 0.5f));
             islandImage.material = islandWaterMaterial;
-            leftPeachMotion = AddLayer("Left peach", islandMotion, leftPeach, new Vector2(666, 128),
-                new Vector2(110, 131), new Vector2(0.5f, 0.78f)).rectTransform;
-            centerPeachMotion = AddLayer("Center peach", islandMotion, centerPeach, new Vector2(929, 113),
-                new Vector2(161, 162), new Vector2(0.60f, 0.79f)).rectTransform;
-            rightPeachMotion = AddLayer("Right peach", islandMotion, rightPeach, new Vector2(1083, 284),
-                new Vector2(107, 125), new Vector2(0.36f, 0.83f)).rectTransform;
+            islandImage.rectTransform.SetAsFirstSibling();
             window = AddLayer("Window light", islandMotion, windowLight, new Vector2(543, 370),
                 new Vector2(173, 107), new Vector2(0.5f, 0.5f));
         }
@@ -87,6 +78,7 @@ namespace DoHwa.UI
         {
             artwork.enabled = false;
             layers.gameObject.SetActive(true);
+            islandMotion.gameObject.SetActive(true);
             rect.localScale = originalScale * 1.045f;
             UpdateMotion(Vector2.zero, Vector2.zero, false, false, 0f);
         }
@@ -125,7 +117,6 @@ namespace DoHwa.UI
         private void UpdateMotion(Vector2 target, Vector2 pointer, bool hasPointer, bool pressed, float deltaTime)
         {
             float smoothing = 1f - Mathf.Exp(-5f * deltaTime);
-            Vector2 previousOffset = pointerOffset;
             pointerOffset = Vector2.Lerp(pointerOffset, target, smoothing);
             float scale = rect.rect.height / ArtworkSize.y;
             float time = Time.unscaledTime;
@@ -136,26 +127,18 @@ namespace DoHwa.UI
 
             Vector2 islandPointer = pointer - new Vector2(islandMotion.anchoredPosition.x, -islandMotion.anchoredPosition.y) /
                 Mathf.Max(0.001f, scale);
-            float treeProximity = hasPointer ? Proximity(islandPointer, new Vector2(976, 223), 320f) : 0f;
+            Vector2 treeCenter = new(976, 223);
+            float treeProximity = hasPointer ? Proximity(islandPointer, treeCenter, 320f) : 0f;
             float houseProximity = hasPointer ? Proximity(islandPointer, new Vector2(625, 423), 235f) : 0f;
+            float pointerLean = Mathf.Clamp((islandPointer.x - treeCenter.x) / 160f, -1f, 1f) * treeProximity;
+            peachAnimator.SetFloat(PointerLean, pointerLean, 0.15f, deltaTime);
             if (pressed && hasPointer && Proximity(islandPointer, new Vector2(825, 398), 425f) > 0f)
             {
                 tap = 1f;
-                tapAge = 0f;
+                peachAnimator.SetTrigger(PeachTap);
             }
 
             tap *= Mathf.Exp(-2.3f * deltaTime);
-            tapAge += deltaTime;
-            float pointerMotion = (pointerOffset.x - previousOffset.x) / Mathf.Max(0.001f, deltaTime) * 1.8f;
-            sway = Mathf.Lerp(sway, pointerMotion + pointerOffset.x * treeProximity * 4f, smoothing);
-            float response = Mathf.Clamp(sway, -8f, 8f);
-            float swing = tap * 8f * Mathf.Sin(tapAge * 10f);
-            float leftAngle = 2.5f * Mathf.Sin(time * 1.74f + 0.3f) + response + swing;
-            float centerAngle = 2.1f * Mathf.Sin(time * 1.43f + 1.8f) + response * 0.72f - swing * 0.65f;
-            float rightAngle = 3.4f * Mathf.Sin(time * 1.96f + 3.1f) + response * 1.15f + swing * 0.85f;
-            leftPeachMotion.localRotation = Quaternion.Euler(0f, 0f, leftAngle);
-            centerPeachMotion.localRotation = Quaternion.Euler(0f, 0f, centerAngle);
-            rightPeachMotion.localRotation = Quaternion.Euler(0f, 0f, rightAngle);
 
             windowResponse = Mathf.Lerp(windowResponse, houseProximity, smoothing);
             float flicker = 0.28f + 0.09f * Mathf.Sin(time * 2.8f) + 0.05f * Mathf.Sin(time * 7.1f + 0.8f);
