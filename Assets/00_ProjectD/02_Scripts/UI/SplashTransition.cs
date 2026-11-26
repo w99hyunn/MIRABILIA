@@ -17,7 +17,7 @@ namespace DoHwa.UI
         {
             if(loading)return;
             loading=true;
-            try {await UiSceneTransition.LoadAsync("Main");}
+            try {await SystemUI.LoadSceneAsync("Main");}
             catch(OperationCanceledException){}
         }
     }

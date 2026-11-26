@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Steamworks;
 using Unity.Netcode;
 using UnityEngine;
@@ -74,13 +74,7 @@ namespace DoHwa.World
             Busy = true; SetStatus("Steam 방을 여는 중");
             try
             {
-                bool done = false; bool failed = false; LobbyCreated_t result = default;
-                using var call = CallResult<LobbyCreated_t>.Create((value, io) => { result = value; failed = io; done = true; });
-                call.Set(SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypeFriendsOnly, 4));
-                float deadline = Time.realtimeSinceStartup + 20;
-                while (!done && Time.realtimeSinceStartup < deadline) await Awaitable.NextFrameAsync(destroyCancellationToken);
-                if (!done || failed || result.m_eResult != EResult.k_EResultOK) throw new InvalidOperationException("Steam 로비 생성 실패");
-                Lobby = new CSteamID(result.m_ulSteamIDLobby);
+                Lobby = await SteamRuntime.CreateFriendsLobbyAsync(destroyCancellationToken);
                 SteamMatchmaking.SetLobbyData(Lobby, "game", SteamRuntime.Settings.lobbyNamespace);
                 SteamMatchmaking.SetLobbyData(Lobby, "protocol", SteamRuntime.Settings.protocol);
                 SteamMatchmaking.SetLobbyData(Lobby, "host", SteamUser.GetSteamID().ToString());
@@ -108,7 +102,7 @@ namespace DoHwa.World
                     while (network.ShutdownInProgress) await Awaitable.NextFrameAsync(destroyCancellationToken);
                 }
                 SteamRuntime.SetPending(lobby);
-                await DoHwa.UI.UiSceneTransition.LoadAsync("Main");
+                await DoHwa.UI.SystemUI.LoadSceneAsync("Main");
             }
             catch (OperationCanceledException) { }
         }
@@ -119,7 +113,7 @@ namespace DoHwa.World
         public void OpenFriends()
         {
             if (SteamRuntime.Ready) SteamFriends.ActivateGameOverlay("Friends");
-            else SetStatus("Steam을 실행하고 로그인해 주세요");
+            else DoHwa.UI.SystemUI.ShowNotice("친구 목록", "Steam을 실행하고 로그인해 주세요.");
         }
         public async void Leave()
         {
@@ -130,7 +124,7 @@ namespace DoHwa.World
             {
                 Close();
                 while (network.ShutdownInProgress) await Awaitable.NextFrameAsync(destroyCancellationToken);
-                await DoHwa.UI.UiSceneTransition.LoadAsync("Main");
+                await DoHwa.UI.SystemUI.LoadSceneAsync("Main");
             }
             catch (OperationCanceledException) { }
             catch (Exception error) { SetStatus(error.Message); }

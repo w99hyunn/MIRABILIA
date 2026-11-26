@@ -6,6 +6,7 @@ namespace DoHwa.World
     public sealed class WorldRegionPresentation : MonoBehaviour
     {
         [SerializeField] private WorldRuntime world;
+        [SerializeField] private WorldMapSession maps;
         [SerializeField] private HeroMotor hero;
         [SerializeField] private OpenWorldDefinition definition;
         [SerializeField] private TMP_Text region;
@@ -16,7 +17,7 @@ namespace DoHwa.World
         private void Update()
         {
             if(Time.unscaledTime<refreshAt)return;refreshAt=Time.unscaledTime+.5f;
-            if(!WorldMapSession.Instance.LocalMapReady)return;
+            if(!maps.LocalMapReady)return;
             if(previousMap!=world.LocalPlayer.mapScene){previousMap=world.LocalPlayer.mapScene;previous=-1;}
             if(previousMap=="Moonshadow")
             {region.text="달그늘 길";climate.text="도깨비와 맺은 약속";return;}
@@ -24,7 +25,7 @@ namespace DoHwa.World
             if(biome==previous)return;previous=biome;
             region.text=definition.regions[biome].title;
             climate.text=definition.regions[biome].climate;
-            WorldMapSession.Instance.CurrentEnvironment.SetBlossoms(definition.regions[biome].blossoms);
+            maps.CurrentEnvironment.SetBlossoms(definition.regions[biome].blossoms);
         }
     }
 }

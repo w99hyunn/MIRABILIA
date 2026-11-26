@@ -1,175 +1,51 @@
-﻿using System;
-using System.Linq;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace DoHwa.UI
 {
-    public sealed class RpgUiController : MonoBehaviour
+    public sealed class RpgUiController : SceneScreen
     {
-        [Serializable]
-        public class Item
-        {
-            public string title, category, description;
-            public Sprite icon;
-            public int quantity;
-            public EquipmentPart equipmentPart=EquipmentPart.None;
-        }
-
-        [SerializeField] private DoHwa.World.ItemCatalog itemCatalog;
-        private Item[] items;
+        [SerializeField] private GameObject inventory;
+        [SerializeField] private GameObject character;
+        [SerializeField] private GameObject map;
+        [SerializeField] private GameObject journal;
+        [SerializeField] private GameObject settings;
+        [SerializeField] private GameObject hud;
+        [SerializeField] private TMP_Text feedback;
+        [SerializeField] private CraftResultDialog craftResult;
+        [SerializeField] private UnityEngine.UI.Slider volumeSlider;
         [SerializeField] private HeroMotor motor;
         [SerializeField] private HeroCamera view;
-        [SerializeField] private Transform hero;
-        [SerializeField] private Camera minimapCamera;
-        private GameObject inventory, map, journal, settings, character;
         [SerializeField] private GameObject wardrobe;
-        private RectTransform minimapMarker;
-        private TMP_Text title, category, description, count, actionLabel, healthLabel, foodLabel, feedback;
-        private UnityEngine.UI.Image detailArt;
-        [SerializeField] private GameObject quickMenu;
-        [SerializeField] private UnityEngine.UI.Image activeTool;
-        [SerializeField] private TMP_Text[] quickNames;
-        private GameObject bagDetail, craftingStage;
-        private GameObject equipmentQuantityRow;
-        private UnityEngine.UI.Image craftingPreview;
-        private UiGaugeMotion healthMotion, foodMotion;
-        private UnityEngine.UI.Button action;
-        private RpgItemButton[] slots, quickSlots;
-        private int selected, filter, equipped, quickSelected;
-        private bool crafting, wasMotorEnabled, wasViewEnabled, modal;
-        private float health = 80, food = 75, feedbackUntil;
-        private readonly int[] quickItems = { 0, 1, 2, 3, 4, 6, 7, 9 };
-        private InputAction bagKey, craftKey, mapKey, journalKey, escapeKey, equipmentKey, wardrobeKey, quickMenuKey;
-        private InputAction[] quickKeys;
+        [SerializeField] private InventoryController inventoryController;
+        [SerializeField] private InventorySortMenu sortMenu;
+        [SerializeField] private UiBackdropBlur backdropBlur;
+        [SerializeField] private Canvas menuCanvas;
+        [SerializeField] private DoHwa.World.WorldMapSession maps;
+        [SerializeField] private QuickSlotBar quickBar;
+        [SerializeField] private WorldDebugPanel debugPanel;
+        private bool wasViewEnabled, modal, capturingBackdrop, preparingMenus, menusReady;
         private int transition;
-        private int sortOrder;
-        private InventorySortMenu sortMenu;
-        private CraftResultDialog craftResult;
-        private UiBackdropBlur backdropBlur;
-        private bool capturingBackdrop;
-        private bool preparingMenus, menusReady;
-        private bool equipmentMode;
-        private int selectedPart;
-        private EquipmentPanel equipmentPanel;
-        private readonly int[] loadout={0,-1,-1,-1,-1,-1,-1,-1,-1};
-        public Item[] Catalog => items ??= CreateItemViews();
+        private float feedbackUntil;
         public bool IsModalOpen => modal;
-        public int SelectedQuickItem => quickItems[quickSelected];
-        private DoHwa.World.WorldRuntime world;
-
-        public void BindWorld(DoHwa.World.WorldRuntime runtime) { world = runtime; }
-
-        public void ApplyWorldState(DoHwa.World.SurvivorState player)
-        {
-            for (int i = 0; i < items.Length; i++) items[i].quantity = player.items[i];
-            Array.Copy(player.equipment, loadout, loadout.Length);
-            equipped = loadout[0]; health = player.health; food = player.food;
-            Refresh();
-        }
-
-        public void ShowWorldResult(DoHwa.World.WorldCommand command, bool success, string reason)
-        {
-            if (!success) { ShowCondition(reason); return; }
-            MarkItemChanged();
-            if (command.action == DoHwa.World.WorldAction.Craft)
-            {
-                var recipe = world.Catalog.Recipe(command.target);
-                craftResult.Show(items[recipe.result.item].icon, items[recipe.result.item].title,
-                    recipe.result.amount * Math.Max(1, command.quantity));
-            }
-        }
-        public int EquippedAt(int part) => loadout[part];
-        private bool IsEquipped(int id) => Array.IndexOf(loadout,id)>=0;
-        private void Equip(int id) { loadout[(int)items[id].equipmentPart]=id; if(items[id].equipmentPart==EquipmentPart.Weapon)equipped=id; }
-
-        private Item[] CreateItemViews() => itemCatalog.items.Select(item => new Item
-        {
-            title = item.title, category = item.category, description = item.description,
-            icon = item.icon, equipmentPart = item.equipmentPart
-        }).ToArray();
-
-        public void Configure(DoHwa.World.ItemCatalog catalog, HeroMotor movement, HeroCamera cameraView, Camera mini)
-        {
-            itemCatalog = catalog; items = CreateItemViews();
-            motor = movement; view = cameraView; hero = movement.transform; minimapCamera = mini;
-        }
-
-        private T Component<T>(string path) where T : Component
-        {
-            if(equipmentMode && path.StartsWith("Inventory/Detail"))path=path.Replace("Inventory/Detail","Character/Detail");
-            transform.Find(path).TryGetComponent<T>(out var component);
-            return component;
-        }
-
-        public void Bind()
-        {
-            inventory = transform.Find("Inventory").gameObject;
-            bagDetail = inventory.transform.Find("Detail").gameObject;
-            craftingStage = inventory.transform.Find("CraftingStage").gameObject;
-            craftingStage.transform.Find("Preview").TryGetComponent<UnityEngine.UI.Image>(out craftingPreview);
-            map = transform.Find("Map").gameObject;
-            journal = transform.Find("Journal").gameObject;
-            settings = transform.Find("Settings").gameObject;
-            character=transform.Find("Character").gameObject;
-            equipmentQuantityRow = character.transform.Find("Detail/QuantityRow").gameObject;
-            equipmentPanel=Component<EquipmentPanel>("Character/EquipmentBoard");
-            minimapMarker = (RectTransform)transform.Find("HUD/Region/MapFrame/Marker");
-            title=Component<TMP_Text>("Inventory/Detail/Title");
-            category=Component<TMP_Text>("Inventory/Detail/Category");
-            description=Component<TMP_Text>("Inventory/Detail/Description");
-            count=Component<TMP_Text>("Inventory/Detail/Count");
-            actionLabel=Component<TMP_Text>("Inventory/Detail/Action/Label");
-            action=Component<UnityEngine.UI.Button>("Inventory/Detail/Action");
-            detailArt=Component<UnityEngine.UI.Image>("Inventory/Detail/Art");
-            healthLabel=Component<TMP_Text>("HUD/Vitals/HealthText");
-            foodLabel=Component<TMP_Text>("HUD/Vitals/FoodText");
-            healthMotion=Component<UiGaugeMotion>("HUD/Vitals/HealthTrack/Fill");
-            foodMotion=Component<UiGaugeMotion>("HUD/Vitals/FoodTrack/Fill");
-            feedback=Component<TMP_Text>("Feedback/Label");
-            slots=transform.Find("Inventory/Grid").GetComponentsInChildren<RpgItemButton>(true);
-            quickSlots=transform.Find("HUD/Quickbar").GetComponentsInChildren<RpgItemButton>(true);
-            Refresh();
-        }
-
-        private void Awake()
-        {
-            items = CreateItemViews();
-            TryGetComponent<UiBackdropBlur>(out backdropBlur);
-            Bind();
-            inventory.TryGetComponent<InventorySortMenu>(out sortMenu);
-            transform.Find("CraftResult").TryGetComponent<CraftResultDialog>(out craftResult);
-            bagKey=new InputAction("Bag",InputActionType.Button,"<Keyboard>/b");
-            craftKey=new InputAction("Craft",InputActionType.Button,"<Keyboard>/c");
-            mapKey=new InputAction("Map",InputActionType.Button,"<Keyboard>/m");
-            journalKey=new InputAction("Journal",InputActionType.Button,"<Keyboard>/j");
-            escapeKey=new InputAction("Close",InputActionType.Button,"<Keyboard>/escape");
-            wardrobeKey=new InputAction("Wardrobe",InputActionType.Button,"<Keyboard>/v");
-            quickMenuKey=new InputAction("Quick menu",InputActionType.Button,"<Keyboard>/q");
-            equipmentKey=new InputAction("Equipment",InputActionType.Button,"<Keyboard>/k");
-            quickKeys=Enumerable.Range(1,8).Select(i=>new InputAction("Quick"+i,InputActionType.Button,"<Keyboard>/"+i)).ToArray();
-        }
-
-        private void OnEnable()
-        {
-            bagKey.Enable(); craftKey.Enable(); mapKey.Enable(); journalKey.Enable(); escapeKey.Enable(); equipmentKey.Enable(); wardrobeKey.Enable();
-            quickMenuKey.Enable();
-            foreach(var key in quickKeys) key.Enable();
-        }
-
         private async void Start()
         {
             try { await PrepareMenusAsync(); }
             catch(OperationCanceledException) { }
         }
 
+        internal override Awaitable ReleaseContentAsync() => maps.UnloadMapsAsync();
+
+        internal override Awaitable PrepareForRevealAsync() => PrepareMenusAsync();
+
         public async Awaitable PrepareMenusAsync()
         {
             while(preparingMenus)await Awaitable.NextFrameAsync(destroyCancellationToken);
             if(menusReady)return;
             preparingMenus=true;
-            TryGetComponent<Canvas>(out var canvas);
+            var canvas = menuCanvas;
             bool wasVisible=canvas.enabled;
             canvas.enabled=false;
             var panels=new[]{inventory,character,map,journal,settings};
@@ -196,63 +72,49 @@ namespace DoHwa.UI
             }
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
-            bagKey.Disable(); craftKey.Disable(); mapKey.Disable(); journalKey.Disable(); escapeKey.Disable(); equipmentKey.Disable(); wardrobeKey.Disable();
-            quickMenuKey.Disable();
-            foreach(var key in quickKeys) key.Disable();
-            if(modal) RestoreMovement();
+            base.OnDisable();
+            if (modal) RestoreMovement();
         }
-
-        private void OnDestroy()
-        {
-            bagKey.Dispose(); craftKey.Dispose(); mapKey.Dispose(); journalKey.Dispose(); escapeKey.Dispose(); equipmentKey.Dispose(); wardrobeKey.Dispose();
-            quickMenuKey.Dispose();
-            foreach(var key in quickKeys) key.Dispose();
-        }
-
         private void Update()
         {
-            if(WorldDebugPanel.CapturingInput)return;
-            if(preparingMenus)return;
+            if (SystemUI.PopupCapturesInput) return;
+            if (preparingMenus) return;
+            if (feedback.transform.parent.gameObject.activeSelf && Time.unscaledTime > feedbackUntil)
+                feedback.transform.parent.gameObject.SetActive(false);
+            var keyboard = Keyboard.current;
+            if (keyboard == null || debugPanel.HandleInput(keyboard)) return;
             if(craftResult.IsOpen)
             {
-                if(escapeKey.WasPressedThisFrame()) craftResult.Close();
+                if(keyboard.escapeKey.wasPressedThisFrame) craftResult.Close();
                 return;
             }
-            if(wardrobeKey.WasPressedThisFrame()) { if(wardrobe.activeSelf) Close(); else OpenWardrobe(); }
-            if(bagKey.WasPressedThisFrame()) { if(inventory.activeSelf && !crafting) Close(); else OpenInventory(); }
-            if(equipmentKey.WasPressedThisFrame()) { if(character.activeSelf) Close(); else OpenEquipment(); }
-            if(craftKey.WasPressedThisFrame()) { if(inventory.activeSelf && crafting) Close(); else OpenCrafting(); }
-            if(mapKey.WasPressedThisFrame()) { if(map.activeSelf) Close(); else OpenMap(); }
-            if(journalKey.WasPressedThisFrame()) { if(journal.activeSelf) Close(); else OpenJournal(); }
-            if (!modal && quickMenuKey.WasPressedThisFrame()) ToggleQuickMenu();
-            if(escapeKey.WasPressedThisFrame()) { if(quickMenu.activeSelf) ToggleQuickMenu(); else if(modal) Close(); else OpenSettings(); }
-            if(!modal) for(int i=0;i<quickKeys.Length;i++) if(quickKeys[i].WasPressedThisFrame()) UseQuick(i);
-            if(feedback.transform.parent.gameObject.activeSelf && Time.unscaledTime>feedbackUntil) feedback.transform.parent.gameObject.SetActive(false);
-        }
-
-        private void LateUpdate()
-        {
-            minimapCamera.transform.position=hero.position+Vector3.up*(map.activeSelf?90:45);
-            minimapCamera.orthographicSize=map.activeSelf?35:14;
-            float headingX=Vector3.Dot(motor.Facing,minimapCamera.transform.right);
-            float headingY=Vector3.Dot(motor.Facing,minimapCamera.transform.up);
-            minimapMarker.localRotation=Quaternion.Euler(0,0,-Mathf.Atan2(headingX,headingY)*Mathf.Rad2Deg);
+            if(keyboard.vKey.wasPressedThisFrame) { if(wardrobe.activeSelf) Close(); else OpenWardrobe(); }
+            if(keyboard.bKey.wasPressedThisFrame) { if(inventory.activeSelf && !inventoryController.IsCrafting) Close(); else OpenInventory(); }
+            if(keyboard.kKey.wasPressedThisFrame) { if(character.activeSelf) Close(); else OpenEquipment(); }
+            if(keyboard.cKey.wasPressedThisFrame) { if(inventory.activeSelf && inventoryController.IsCrafting) Close(); else OpenCrafting(); }
+            if(keyboard.mKey.wasPressedThisFrame) { if(map.activeSelf) Close(); else OpenMap(); }
+            if(keyboard.jKey.wasPressedThisFrame) { if(journal.activeSelf) Close(); else OpenJournal(); }
+            if (!modal && keyboard.qKey.wasPressedThisFrame) quickBar.Toggle();
+            if(keyboard.escapeKey.wasPressedThisFrame) { if(quickBar.IsOpen) quickBar.Toggle(); else if(modal) Close(); else OpenSettings(); }
+            if (!modal)
+                for (int i = 0; i < quickBar.Count; i++)
+                    if (keyboard[(Key)((int)Key.Digit1 + i)].wasPressedThisFrame)
+                        inventoryController.UseQuick(i);
         }
 
         private async void Show(GameObject panel)
         {
-            quickMenu.SetActive(false);
+            quickBar.Close();
             if(!menusReady)await PrepareMenusAsync();
             bool alreadyOpen = panel.activeSelf;
             if(alreadyOpen && modal && panel.TryGetComponent<UiPanelReveal>(out var panelMotion) && !panelMotion.IsLeaving)return;
             int current=++transition;
             if(craftResult.IsOpen) craftResult.Close();
-            HideQuickTooltip();
             if(!modal) {
-                wasMotorEnabled=motor.enabled; wasViewEnabled=view.enabled; motor.InputBlocked=true; motor.enabled=false; view.enabled=false; modal=true;
-                transform.Find("HUD").gameObject.SetActive(false);
+                wasViewEnabled=view.enabled; motor.SetInputBlocked(HeroMotor.InputBlock.Menu, true); view.enabled=false; modal=true;
+                hud.SetActive(false);
                 capturingBackdrop=true;
                 await backdropBlur.CaptureAsync();
                 capturingBackdrop=false;
@@ -281,14 +143,14 @@ namespace DoHwa.UI
             inventory.SetActive(panel==inventory); map.SetActive(panel==map); journal.SetActive(panel==journal); settings.SetActive(panel==settings);
             character.SetActive(panel==character);
             wardrobe.SetActive(panel==wardrobe);
-            transform.Find("HUD").gameObject.SetActive(false);
+            hud.SetActive(false);
             if(alreadyOpen && !wardrobeSwitch && panel.TryGetComponent<UiPanelReveal>(out var reveal))reveal.Replay();
         }
 
         private void RestoreMovement()
         {
             // Scene teardown may destroy the character before the UI is disabled.
-            if(motor) { motor.InputBlocked=false; motor.enabled=wasMotorEnabled; }
+            if(motor) motor.SetInputBlocked(HeroMotor.InputBlock.Menu, false);
             if(view) view.enabled=wasViewEnabled;
             modal=false;
         }
@@ -296,11 +158,6 @@ namespace DoHwa.UI
         {
             if(craftResult.IsOpen) { craftResult.Close(); return; }
             if(inventory.activeSelf && sortMenu.IsOpen) { sortMenu.Hide(); return; }
-            if(settings.activeSelf && settings.TryGetComponent<SettingsMenu>(out var settingsMenu) && settingsMenu.ExitOpen)
-            {
-                settingsMenu.CloseExit();
-                return;
-            }
             int current = ++transition;
             GameObject panel = wardrobe.activeSelf ? wardrobe : character.activeSelf ? character : inventory.activeSelf ? inventory : map.activeSelf ? map : journal.activeSelf ? journal : settings;
             if(panel.activeSelf && panel.TryGetComponent<UiPanelReveal>(out var reveal)) await reveal.HideAsync();
@@ -308,253 +165,41 @@ namespace DoHwa.UI
             inventory.SetActive(false); map.SetActive(false); journal.SetActive(false); settings.SetActive(false);
             character.SetActive(false);
             wardrobe.SetActive(false);
-            transform.Find("HUD").gameObject.SetActive(true);
+            hud.SetActive(true);
             backdropBlur.Hide();
             if(modal) RestoreMovement();
         }
 
         public void OpenInventory()
         {
-            equipmentMode = crafting = false;
-            filter = selected = 0;
-            bagDetail.SetActive(false);
+            inventoryController.PrepareInventory();
             Show(inventory);
-            Refresh();
-            ResetInventoryScroll();
         }
-        public void OpenCrafting() { equipmentMode=false; crafting=true; filter=0; Show(inventory); Select(3); ResetInventoryScroll(); }
-        public void OpenEquipment() { equipmentMode=true;crafting=false;filter=0;selectedPart=0;selected=loadout[0]>=0?loadout[0]:0;Show(character);Refresh(); }
-        public void SelectEquipmentPart(int part) { bool changed=selectedPart!=part;selectedPart=part;if(loadout[part]>=0)selected=loadout[part];Refresh();if(changed && character.TryGetComponent<UiPanelReveal>(out var reveal))reveal.RefreshContent(2); }
+
+        public void OpenEquipment()
+        {
+            inventoryController.PrepareEquipment();
+            Show(character);
+        }
+
+        public void OpenCrafting()
+        {
+            inventoryController.PrepareCrafting();
+            Show(inventory);
+        }
         public void OpenWardrobe() => Show(wardrobe);
         public void OpenMap() => Show(map);
         public void OpenJournal() => Show(journal);
         public void OpenSettings()
         {
-            Component<UnityEngine.UI.Slider>("Settings/Panel/Volume").SetValueWithoutNotify(AudioListener.volume);
+            volumeSlider.SetValueWithoutNotify(AudioListener.volume);
             Show(settings);
         }
         public void SetVolume(float value) => AudioListener.volume=value;
-        public void SetFilter(int value)
-        {
-            bool changed = filter != value || crafting;
-            equipmentMode = crafting = false;
-            filter = value;
-            if (changed) bagDetail.SetActive(false);
-            Refresh();
-            ResetInventoryScroll();
-            if (changed && inventory.TryGetComponent<UiPanelReveal>(out var reveal)) reveal.RefreshContent(1);
-        }
-        public void Select(int index)
-        {
-            bool changed = selected != index || (!equipmentMode && !bagDetail.activeSelf);
-            selected = index;
-            if (equipmentMode) selectedPart = (int)items[index].equipmentPart;
-            else bagDetail.SetActive(true);
-            Refresh();
-            var panel = equipmentMode ? character : inventory;
-            if (changed && panel.TryGetComponent<UiPanelReveal>(out var reveal)) reveal.RefreshContent(2);
-        }
-        public void ShowQuickTooltip(int index)
-        {
-            var item=items[quickItems[index]];
-            var tip=transform.Find("HUD/QuickTooltip");
-            tip.gameObject.SetActive(true);
-            Component<TMP_Text>("HUD/QuickTooltip/Label").text=item.title+"   /   "+item.quantity+"개";
-        }
-        public void HideQuickTooltip() => transform.Find("HUD/QuickTooltip").gameObject.SetActive(false);
-        private void ResetInventoryScroll()
-        {
-            var scroll=Component<UnityEngine.UI.ScrollRect>("Inventory/Grid");
-            scroll.StopMovement(); scroll.verticalNormalizedPosition=1;
-        }
-        public void Sort() => sortMenu.Toggle();
-        public void SetSort(int order) { sortOrder=order; Refresh(); ResetInventoryScroll(); }
-
-        public void ToggleQuickMenu()
-        {
-            HideQuickTooltip();
-            quickMenu.SetActive(!quickMenu.activeSelf);
-        }
-
-        public void UseQuick(int index)
-        {
-            quickMenu.SetActive(false);
-            HideQuickTooltip();
-            equipmentMode=false;crafting=false;
-            quickSelected=index; selected=quickItems[index];
-            if(selected==2 || selected==3 || selected==7) UseSelected();
-            else { if(items[selected].equipmentPart==EquipmentPart.Weapon) Equip(selected);  }
-            Refresh();
-            MarkItemChanged();
-        }
-
-        private void MarkItemChanged()
-        {
-            foreach(var slot in slots) slot.PulseItem(selected);
-            foreach(var slot in quickSlots) slot.PulseItem(Array.IndexOf(quickItems,selected));
-            if(equipmentMode) equipmentPanel.PulsePart(selectedPart);
-        }
-
-        private void ShowCondition(string reason)
-        {
-            Refresh();
-            if(inventory.activeSelf || character.activeSelf)
-                count.text += "\n<color=#AE5147>" + reason + "</color>";
-            else { healthMotion.Pulse(); foodMotion.Pulse(); }
-        }
-        public void UseSelected()
-        {
-            if(craftResult.IsOpen) return;
-            if (world)
-            {
-                var command = new DoHwa.World.WorldCommand { item = selected };
-                if (crafting)
-                {
-                    var recipe = Array.Find(world.Catalog.recipes, r => r.result.item == selected);
-                    command.action = DoHwa.World.WorldAction.Craft; command.target = recipe.id;
-                    command.quantity = Keyboard.current != null && Keyboard.current.shiftKey.isPressed ? world.MaxCraftCount(recipe) : 1;
-                    if (command.quantity < 1) { ShowCondition("재료와 제작 시설을 확인하세요"); return; }
-                }
-                else if (items[selected].equipmentPart != EquipmentPart.None)
-                { command.action = DoHwa.World.WorldAction.Equip; command.part = (int)items[selected].equipmentPart; }
-                else command.action = DoHwa.World.WorldAction.Consume;
-                world.Submit(command);
-                return;
-            }
-            if(equipmentMode && selected==loadout[selectedPart]) { loadout[selectedPart]=-1;Refresh();MarkItemChanged();return; }
-            if(crafting)
-            {
-                if(selected==3 && items[6].quantity>=3 && items[2].quantity>=1) { items[6].quantity-=3; items[2].quantity--; items[3].quantity++; craftResult.Show(items[3].icon,items[3].title,1); }
-                else if(selected==11 && items[5].quantity>=3) { items[5].quantity-=3; items[11].quantity++; craftResult.Show(items[11].icon,items[11].title,1); }
-                else { Refresh(); ShowCondition("재료가 부족합니다"); return; }
-            }
-            else if(items[selected].quantity>0)
-            {
-                if(selected==2 || selected==7) { if(food>=100) { ShowCondition("포만감이 가득 찼습니다"); return; } items[selected].quantity--; food=Mathf.Min(100,food+20); health=Mathf.Min(100,health+5); foodMotion.Pulse();healthMotion.Pulse(); }
-                else if(selected==3) { if(health>=100) { ShowCondition("체력이 가득 찼습니다"); return; } items[3].quantity--; health=Mathf.Min(100,health+35); healthMotion.Pulse(); }
-                else if(items[selected].equipmentPart!=EquipmentPart.None) { Equip(selected);  }
-            }
-            Refresh();
-            MarkItemChanged();
-        }
-
         public void Notify(string message)
         {
             feedback.text=message; feedback.transform.parent.gameObject.SetActive(true); feedbackUntil=Time.unscaledTime+2.8f;
         }
 
-        private bool Visible(int index)
-        {
-            if (crafting && world) return Array.Exists(world.Catalog.recipes, r => r.result.item == index);
-            if(crafting) return index==3 || index==11;
-            if(filter==0) return true;
-            return filter==1 ? items[index].category=="장비" : filter==2 ? items[index].category=="소모품" : items[index].category=="재료";
-        }
-
-        public void Refresh()
-        {
-            title=Component<TMP_Text>("Inventory/Detail/Title");category=Component<TMP_Text>("Inventory/Detail/Category");description=Component<TMP_Text>("Inventory/Detail/Description");count=Component<TMP_Text>("Inventory/Detail/Count");actionLabel=Component<TMP_Text>("Inventory/Detail/Action/Label");action=Component<UnityEngine.UI.Button>("Inventory/Detail/Action");detailArt=Component<UnityEngine.UI.Image>("Inventory/Detail/Art");
-            equipmentPanel.RefreshStats(health, food);
-            var visible=Enumerable.Range(0,items.Length).Where(Visible).ToArray();
-            visible = sortOrder switch
-            {
-                1 => visible.OrderBy(i=>items[i].category, StringComparer.CurrentCulture).ThenBy(i=>items[i].title, StringComparer.CurrentCulture).ToArray(),
-                2 => visible.OrderBy(i=>items[i].title, StringComparer.CurrentCulture).ToArray(),
-                3 => visible.OrderByDescending(i=>items[i].quantity).ThenBy(i=>i).ToArray(),
-                _ => visible
-            };
-            if(!visible.Contains(selected)) selected=visible[0];
-            for(int i=0;i<slots.Length;i++)
-            {
-                int id=i<visible.Length?visible[i]:-1;
-                slots[i].Show(id,id>=0?items[id].icon:null,id>=0?items[id].quantity:0,id==selected && bagDetail.activeSelf,id>=0&&IsEquipped(id),!crafting&&filter==0);
-            }
-            for(int i=0;i<quickSlots.Length;i++)
-            {
-                var quickItem = items[quickItems[i]];
-                quickNames[i].text = quickItem.title;
-                quickSlots[i].Show(i,quickItem.icon,quickItem.quantity,i==quickSelected,false);
-            }
-            activeTool.sprite = items[SelectedQuickItem].icon;
-            var item=items[selected]; title.text=item.title; category.text=crafting?"제작법":item.category;
-            craftingStage.SetActive(crafting);
-            if (crafting) craftingPreview.sprite = item.icon;
-            detailArt.sprite=item.icon; detailArt.preserveAspect=true;
-            description.text=item.description;
-            count.text=crafting ? selected==3?$"필요 재료\n\n약초<pos=240>{items[6].quantity} / 3\n복숭아<pos=240>{items[2].quantity} / 1":$"필요 재료\n\n철광석<pos=240>{items[5].quantity} / 3" : $"보유 수량<pos=240>{item.quantity}";
-            if (crafting && world)
-            {
-                var recipe = Array.Find(world.Catalog.recipes, r => r.result.item == selected);
-                count.text = string.Join("\n", recipe.ingredients.Select(cost => items[cost.item].title + "<pos=240>" + items[cost.item].quantity + " / " + cost.amount));
-            }
-            actionLabel.text=crafting?"제작하기":item.category=="장비"?(selected==equipped?"장착 중":"장착하기"):item.category=="소모품"?"사용하기":"제작 재료";
-            action.interactable=crafting ? selected==3?items[6].quantity>=3&&items[2].quantity>=1:items[5].quantity>=3 : item.quantity>0 && item.category!="재료" && selected!=equipped;
-            if(crafting && !action.interactable) actionLabel.text="재료 부족";
-            if (crafting && world)
-            {
-                var recipe = Array.Find(world.Catalog.recipes, r => r.result.item == selected);
-                bool hasStation = world.HasStation(world.LocalPlayer.position, recipe.station);
-                int maximum = world.MaxCraftCount(recipe);
-                string stationName = recipe.station switch
-                {
-                    DoHwa.World.StationKind.Workbench => "작업대",
-                    DoHwa.World.StationKind.Furnace => "용광로",
-                    DoHwa.World.StationKind.Forge => "대장간",
-                    DoHwa.World.StationKind.Alchemy => "연금대",
-                    _ => "손 제작"
-                };
-                category.text = stationName + (hasStation ? "" : " 필요");
-                description.text = item.description + $"\n\n한 번에 {recipe.result.amount}개 제작\n최대 {maximum}회 제작 가능";
-                if (maximum > 1) description.text += "\nShift + 클릭으로 최대 제작";
-                action.interactable = maximum > 0;
-                actionLabel.text = !hasStation ? "시설 필요" : maximum > 0 ? "제작하기" : "제작 불가";
-            }
-            Component<TMP_Text>("Inventory/Header/Title").text=crafting?"제작":"배낭";
-            Component<TMP_Text>("Inventory/InventoryHeading").text=crafting?"제작법":"소지품";
-            Component<TMP_Text>("Inventory/InventorySubheading").text=crafting?"숲에서 모은 재료로 여정을 준비하세요":"여정에서 모은 도구와 작은 발견들";
-            for(int i=0;i<4;i++)
-                Component<UiVisualState>("Inventory/Filters/Filter"+i).SetActiveState(!equipmentMode&&!crafting&&filter==i);
-            Component<UiVisualState>("Inventory/Filters/Craft").SetActiveState(crafting);
-            healthLabel.text=$"{health:0} / 100"; foodLabel.text=$"{food:0} / 100";
-            healthMotion.SetValue(health/100); foodMotion.SetValue(food/100);
-            Component<TMP_Text>("Inventory/Equipment/Equipped").text="무기\n"+(loadout[0]>=0?items[loadout[0]].title:"미착용");
-            Component<UnityEngine.UI.Image>("Inventory/Equipment/Icon").sprite=loadout[0]>=0?items[loadout[0]].icon:null; Component<UnityEngine.UI.Image>("Inventory/Equipment/Icon").enabled=loadout[0]>=0;
-            transform.Find("Inventory/Grid").gameObject.SetActive(!equipmentMode);
-            transform.Find("Inventory/Sort").gameObject.SetActive(!equipmentMode);
-            equipmentPanel.gameObject.SetActive(equipmentMode);
-            transform.Find("Inventory/Equipment").gameObject.SetActive(false);
-            Component<UiVisualState>("Inventory/EquipmentTab").SetActiveState(equipmentMode);
-            if(!crafting) {
-                actionLabel.text=item.category=="장비"?(IsEquipped(selected)?"장착 중":"장착하기"):actionLabel.text;
-                if(item.category=="장비") action.interactable=item.quantity>0&&!IsEquipped(selected);
-            }
-            if(equipmentMode) {
-                equipmentPanel.RefreshView(selectedPart);
-                Component<TMP_Text>("Inventory/Header/Title").text="장비";
-                Component<TMP_Text>("Inventory/InventoryHeading").text="부위별 장비";
-                Component<TMP_Text>("Inventory/InventorySubheading").text="부위를 선택하거나 아래 소지 장비를 선택하세요";
-                int id=loadout[selectedPart];
-                bool candidate=items[selected].equipmentPart==(EquipmentPart)selectedPart && selected!=id;
-                equipmentQuantityRow.SetActive(candidate || id >= 0);
-                if(!candidate && id<0) { title.text=EquipmentPanel.PartNames[selectedPart];category.text="장비 부위";description.text="착용한 장비가 없습니다.";count.text="";detailArt.enabled=false;actionLabel.text="장착할 장비 없음";action.interactable=false; }
-                else { detailArt.enabled=true;category.text="장비 / "+EquipmentPanel.PartNames[selectedPart];actionLabel.text=IsEquipped(selected)?"장착 해제":"장착하기";action.interactable=item.quantity>0;count.text=$"보유 수량<pos=240>{item.quantity}"; }
-            } else detailArt.enabled=!crafting;
-        }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

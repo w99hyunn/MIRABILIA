@@ -11,7 +11,7 @@ namespace DoHwa.World
         public static bool Use(WorldState world, SurvivorState player, GameCatalog catalog, string id, out string reason)
         {
             var building = world.buildings.Find(b => b.id == id);
-            if (building == null || Vector3.Distance(player.position, building.position) > 3f)
+            if (building == null || building.mapScene != player.mapScene || Vector3.Distance(player.position, building.position) > 3f)
             { reason = "시설 가까이에서 이용하세요"; return false; }
             var spec = catalog.Building(building.definition);
             if (spec.use == BuildingUse.Camp)
@@ -57,7 +57,7 @@ namespace DoHwa.World
         public static bool Claim(WorldState world, SurvivorState player, GameCatalog catalog, string campId, out string reason)
         {
             var camp = world.buildings.Find(b => b.id == campId);
-            if (camp == null || catalog.Building(camp.definition).use != BuildingUse.Camp || Vector3.Distance(player.position, camp.position) > 3f)
+            if (camp == null || camp.mapScene != player.mapScene || catalog.Building(camp.definition).use != BuildingUse.Camp || Vector3.Distance(player.position, camp.position) > 3f)
             { reason = "모닥불 가까이에서 보상을 받으세요"; return false; }
             int claimed = 0;
             for (int i = player.pendingRewards.Count - 1; i >= 0; i--)

@@ -10,8 +10,10 @@ namespace DoHwa.World
     public sealed class WorldPlayerInteraction : MonoBehaviour
     {
         [SerializeField] private WorldRuntime world;
+        [SerializeField] private WorldMapSession maps;
         [SerializeField] private HeroMotor hero;
         [SerializeField] private RpgUiController ui;
+        [SerializeField] private ItemCatalog itemCatalog;
         [SerializeField] private Camera view;
         [SerializeField] private TMP_Text interactionLabel;
         [SerializeField] private Transform placementMarker;
@@ -26,36 +28,29 @@ namespace DoHwa.World
         private float attackAt;
         private float resultUntil;
         private string result;
-        private WorldBuilding[] buildings;
         private int respawns;
 
         private void Start()
         {
-            ui.BindWorld(world);
             world.Changed += Refresh;
             world.Result += OnResult;
-            hero.TryGetComponent<CharacterController>(out var body);
-            body.enabled = false; hero.transform.position = world.LocalPlayer.position; body.enabled = true;
+            hero.Teleport(world.LocalPlayer.position);
             Refresh();
         }
 
         private void Refresh()
         {
             if (world.LocalPlayer == null) return;
-            buildings = FindObjectsByType<WorldBuilding>(FindObjectsSortMode.None);
-            ui.ApplyWorldState(world.LocalPlayer);
-            if (WorldMapSession.Instance.LocalMapReady && (respawns != world.LocalPlayer.respawns || travelRevision != world.LocalPlayer.travelRevision))
+            if (maps.LocalMapReady && (respawns != world.LocalPlayer.respawns || travelRevision != world.LocalPlayer.travelRevision))
             {
                 travelRevision = world.LocalPlayer.travelRevision;
                 respawns = world.LocalPlayer.respawns;
-                hero.TryGetComponent<CharacterController>(out var body);
-                body.enabled = false; hero.transform.position = world.LocalPlayer.position; body.enabled = true;
+                hero.Teleport(world.LocalPlayer.position);
             }
         }
 
         private void OnResult(WorldCommand command, bool success, string reason)
         {
-            ui.ShowWorldResult(command, success, reason);
             if (ui.IsModalOpen) return;
             result = success ? command.action switch
             {
@@ -72,7 +67,7 @@ namespace DoHwa.World
             if (success && command.action == WorldAction.OpenCache)
             {
                 var opened = world.Caches.First(c => c.Id == command.target);
-                result = string.Join("\n", opened.Definition.rewards.Select(r => ui.Catalog[r.item].title + " ×" + r.amount));
+                result = string.Join("\n", opened.Definition.rewards.Select(r => itemCatalog.items[r.item].title + " ×" + r.amount));
             }
             resultUntil = Time.unscaledTime + (command.action == WorldAction.OpenCache || command.action == WorldAction.UseGate ? 3.5f : 1.5f);
         }
@@ -80,9 +75,9 @@ namespace DoHwa.World
         private void Update()
         {
             if (world.LocalPlayer == null) return;
-            if (!WorldMapSession.Instance.LocalMapReady) { interactionLabel.text = ""; return; }
+            if (!maps.LocalMapReady) { interactionLabel.text = ""; return; }
             world.LocalPlayer.position = hero.transform.position;
-            if (ui.IsModalOpen || !hero.enabled)
+            if (hero.InputBlocked || !hero.enabled)
             { interactionLabel.text = ""; placementMarker.gameObject.SetActive(false); return; }
             var keyboard = Keyboard.current;
             var mouse = Mouse.current;
@@ -98,8 +93,8 @@ namespace DoHwa.World
                 float distance = Vector3.Distance(hero.transform.position, resource.transform.position);
                 if (distance < closest) { closest = distance; target = resource; }
             }
-            foreach (var candidate in buildings)
-                if (candidate &&
+            foreach (var candidate in world.Buildings)
+                if (candidate && candidate.gameObject.activeInHierarchy &&
                     Vector3.Distance(hero.transform.position, candidate.transform.position) < closest)
                 { closest = Vector3.Distance(hero.transform.position, candidate.transform.position); building = candidate; target = null; }
             foreach (var candidate in world.Caches)

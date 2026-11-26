@@ -27,9 +27,7 @@ namespace DoHwa.UI
         }
         public void FinishTipChange()=>changingTip=false;
         private bool finished;
-        private static bool loading;
-        private static UiSceneTransition instance;
-        private void Awake() { instance=this; gameObject.SetActive(false); }
+        private bool loading;
         private void SetProgress(float value)
         {
             for(int i=0;i<progressMarks.Length;i++)
@@ -41,58 +39,53 @@ namespace DoHwa.UI
             finished=false;animator.Play(state,0,0);
             while(!finished)await Awaitable.NextFrameAsync(destroyCancellationToken);
         }
-        public static async Awaitable LoadAsync(string scene)
+        internal async Awaitable LoadAsync(string scene)
         {
             if(loading)return;
             loading=true;
-            DoHwa.GameSupport.EnsureLoaded();
-            var curtain=instance;
-            curtain.gameObject.SetActive(true);
-            var previous=SceneManager.GetActiveScene();
-            if(DoHwa.World.WorldMapSession.Instance)
-                previous=DoHwa.World.WorldMapSession.Instance.gameObject.scene;
-            var suspended=new System.Collections.Generic.List<Behaviour>();
+            gameObject.SetActive(true);
+            var outgoing = SceneScreen.Current;
+            var previous = outgoing ? outgoing.gameObject.scene : SceneManager.GetActiveScene();
+            (bool input, bool audio) suspended = default;
+            bool didSuspend = false;
             try
             {
-                curtain.SetProgress(0);
-                await curtain.PlayAsync("Cover");
+                SetProgress(0);
+                await PlayAsync("Cover");
                 var operation=SceneManager.LoadSceneAsync(scene,LoadSceneMode.Additive);
                 operation.allowSceneActivation=false;
                 while(operation.progress<.9f)
                 {
-                    curtain.SetProgress(operation.progress/.9f);
-                    await Awaitable.NextFrameAsync(curtain.destroyCancellationToken);
+                    SetProgress(operation.progress/.9f);
+                    await Awaitable.NextFrameAsync(destroyCancellationToken);
                 }
-                curtain.SetProgress(1);
+                SetProgress(1);
                 // Additive activation overlaps both screens for a frame; hand input/audio over first.
-                foreach(var root in previous.GetRootGameObjects())
+                if (outgoing)
                 {
-                    foreach(var input in root.GetComponentsInChildren<UnityEngine.EventSystems.EventSystem>())
-                        if(input.enabled){suspended.Add(input);input.enabled=false;}
-                    foreach(var listener in root.GetComponentsInChildren<AudioListener>())
-                        if(listener.enabled){suspended.Add(listener);listener.enabled=false;}
+                    suspended = outgoing.Suspend();
+                    didSuspend = true;
                 }
                 operation.allowSceneActivation=true;
-                await Awaitable.FromAsyncOperation(operation,curtain.destroyCancellationToken);
+                await Awaitable.FromAsyncOperation(operation,destroyCancellationToken);
                 for(int i=0;i<SceneManager.sceneCount;i++)
                 {
                     var loaded=SceneManager.GetSceneAt(i);
                     if(loaded.name==scene && loaded.handle!=previous.handle)
                     { SceneManager.SetActiveScene(loaded); break; }
                 }
-                if(previous.name=="Ingame" && DoHwa.World.WorldMapSession.Instance)
-                    await DoHwa.World.WorldMapSession.Instance.UnloadMapsAsync();
+                if (outgoing) await outgoing.ReleaseContentAsync();
                 if(previous.name!="System")
-                    await Awaitable.FromAsyncOperation(SceneManager.UnloadSceneAsync(previous),curtain.destroyCancellationToken);
-                foreach(var root in SceneManager.GetActiveScene().GetRootGameObjects())
-                    foreach(var ui in root.GetComponentsInChildren<RpgUiController>(true))
-                        await ui.PrepareMenusAsync();
-                await Awaitable.NextFrameAsync(curtain.destroyCancellationToken);
-                await curtain.PlayAsync("Reveal");
+                    await Awaitable.FromAsyncOperation(SceneManager.UnloadSceneAsync(previous),destroyCancellationToken);
+                var incoming = SceneScreen.Current;
+                if (incoming && incoming.gameObject.scene == SceneManager.GetActiveScene())
+                    await incoming.PrepareForRevealAsync();
+                await Awaitable.NextFrameAsync(destroyCancellationToken);
+                await PlayAsync("Reveal");
             }
             finally {
-                foreach(var component in suspended)if(component)component.enabled=true;
-                loading=false;curtain.gameObject.SetActive(false);
+                if (didSuspend && outgoing) outgoing.Restore(suspended);
+                loading=false;gameObject.SetActive(false);
             }
         }
     }

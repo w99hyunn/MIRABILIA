@@ -2464,6 +2464,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3442117468647402259}
   - component: {fileID: 781867555929871295}
+  - component: {fileID: 7734377580993868834}
   m_Layer: 0
   m_Name: RiverStoneHearth
   m_TagString: Untagged
@@ -2509,3 +2510,23 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.1890677, y: 0.25872535, z: 1.1999999}
   m_Center: {x: 0, y: 0.1293626, z: 0}
+--- !u!114 &7734377580993868834
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6959587880091860757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba57b2b05f9b1d74097f72d9b98d723f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.World.WorldBuilding
+  visibility:
+    renderers:
+    - {fileID: 2749008094082842993}
+    - {fileID: 3416623584070883486}
+    lights:
+    - {fileID: 2538906056527585402}
+    volumes: []
+  garden: {fileID: 0}

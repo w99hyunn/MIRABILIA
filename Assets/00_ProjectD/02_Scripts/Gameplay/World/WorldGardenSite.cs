@@ -6,6 +6,9 @@ namespace DoHwa.World
     public sealed class WorldGardenSite : MonoBehaviour
     {
         [SerializeField] private string persistentId;
+        [SerializeField] private WorldBuilding building;
+
+        public WorldBuilding Building => building;
         public string PersistentId => persistentId;
     }
 }

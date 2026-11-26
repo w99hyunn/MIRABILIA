@@ -5,7 +5,6 @@ using UnityEngine.SceneManagement;
 
 namespace DoHwa.World
 {
-    [DefaultExecutionOrder(-10000)]
     public sealed class SteamRuntime : MonoBehaviour
     {
         public static bool Ready { get; private set; }
@@ -13,13 +12,17 @@ namespace DoHwa.World
         public static SteamSettings Settings { get; private set; }
         public static CSteamID PendingLobby { get; private set; }
         public static event Action<CSteamID> JoinRequested;
+        private static bool initialized;
         private Callback<GameLobbyJoinRequested_t> invite;
         private Callback<GameRichPresenceJoinRequested_t> friendJoin;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() { Ready = false; Error = ""; PendingLobby = default; JoinRequested = null; }
-        private void Awake()
+        private static void ResetStatics() { initialized = false; Ready = false; Error = ""; PendingLobby = default; JoinRequested = null; }
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void InitializeSteam()
         {
+            if (initialized) return;
+            initialized = true;
             Settings = Resources.Load<SteamSettings>("SteamSettings");
             try
             {
@@ -43,16 +46,55 @@ namespace DoHwa.World
                     return;
                 }
                 SteamNetworkingUtils.InitRelayNetworkAccess();
-                invite = Callback<GameLobbyJoinRequested_t>.Create(e => RequestJoin(e.m_steamIDLobby));
-                friendJoin = Callback<GameRichPresenceJoinRequested_t>.Create(e =>
-                {
-                    if (TryParseLobby(e.m_rgchConnect.Split(' ', StringSplitOptions.RemoveEmptyEntries), out var lobby)) RequestJoin(lobby);
-                });
                 var args = Environment.GetCommandLineArgs();
                 if (TryParseLobby(args, out var pending)) PendingLobby = pending;
             }
             catch (Exception error) { Error = error.Message; Ready = false; Debug.LogException(error); }
         }
+        private void Awake()
+        {
+            InitializeSteam();
+            if (!Ready) return;
+            invite = Callback<GameLobbyJoinRequested_t>.Create(e => RequestJoin(e.m_steamIDLobby));
+            friendJoin = Callback<GameRichPresenceJoinRequested_t>.Create(e =>
+            {
+                if (TryParseLobby(e.m_rgchConnect.Split(' ', StringSplitOptions.RemoveEmptyEntries), out var lobby)) RequestJoin(lobby);
+            });
+        }
+
+        internal static async Awaitable<CSteamID> CreateFriendsLobbyAsync(System.Threading.CancellationToken cancellation)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (!Ready || !SteamUser.BLoggedOn())
+                throw new InvalidOperationException("Steam에 로그인한 후 다시 시도해 주세요.");
+
+            bool completed = false;
+            bool ioFailure = false;
+            LobbyCreated_t response = default;
+            using var call = CallResult<LobbyCreated_t>.Create((result, failed) =>
+            {
+                response = result;
+                ioFailure = failed;
+                completed = true;
+            });
+            var handle = SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypeFriendsOnly, 4);
+            if (handle == SteamAPICall_t.Invalid)
+                throw new InvalidOperationException("Steam이 방 생성 요청을 받지 못했습니다.");
+            call.Set(handle);
+            double deadline = Time.realtimeSinceStartupAsDouble + 20;
+            while (!completed)
+            {
+                if (Time.realtimeSinceStartupAsDouble >= deadline)
+                    throw new TimeoutException("Steam 방 생성 응답 시간이 초과되었습니다.");
+                await Awaitable.NextFrameAsync(cancellation);
+            }
+            if (ioFailure)
+                throw new InvalidOperationException("Steam과 통신하는 중 연결이 끊겼습니다.");
+            if (response.m_eResult != EResult.k_EResultOK)
+                throw new InvalidOperationException($"Steam 방 생성 실패 ({response.m_eResult})");
+            return new CSteamID(response.m_ulSteamIDLobby);
+        }
+
         private static void SetDevelopmentAppId()
         {
             Environment.SetEnvironmentVariable("SteamAppId", Settings.appId.ToString());
@@ -67,7 +109,7 @@ namespace DoHwa.World
         {
             PendingLobby = lobby;
             if (JoinRequested != null) JoinRequested.Invoke(lobby);
-            else if (SceneManager.GetActiveScene().name != "Main") _ = DoHwa.UI.UiSceneTransition.LoadAsync("Main");
+            else if (SceneManager.GetActiveScene().name != "Main") _ = DoHwa.UI.SystemUI.LoadSceneAsync("Main");
         }
         public static void ClearPending() => PendingLobby = default;
         public static void SetPending(CSteamID lobby) => PendingLobby = lobby;
@@ -84,6 +126,7 @@ namespace DoHwa.World
             friendJoin?.Dispose();
             if (Ready) SteamAPI.Shutdown();
             Ready = false;
+            initialized = false;
         }
     }
 }

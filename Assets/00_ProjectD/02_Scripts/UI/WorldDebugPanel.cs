@@ -6,47 +6,41 @@ using DoHwa.World;
 
 namespace DoHwa.UI
 {
-    [DefaultExecutionOrder(-100)]
     public sealed class WorldDebugPanel : MonoBehaviour
     {
         [SerializeField] private GameObject panel;
         [SerializeField] private TMP_Text status;
         [SerializeField] private OpenWorldDefinition definition;
         private bool travelling;
-        private bool restoreMotor;
-        public static bool CapturingInput { get; private set; }
-        private void Update()
+        [SerializeField] private WorldRuntime world;
+        [SerializeField] private WorldMapSession maps;
+        internal bool HandleInput(Keyboard keyboard)
         {
-            if (Keyboard.current == null) return;
-            if (Keyboard.current.f8Key.wasPressedThisFrame) Toggle();
-            else if (panel.activeSelf && Keyboard.current.escapeKey.wasPressedThisFrame) Close();
+            if (keyboard.f8Key.wasPressedThisFrame)
+            {
+                Toggle();
+                return true;
+            }
+            if (!panel.activeSelf) return false;
+            if (keyboard.escapeKey.wasPressedThisFrame) Close();
+            return true;
         }
         public void Toggle()
         {
             if (travelling) return;
             if (panel.activeSelf) { Close(); return; }
-            restoreMotor = WorldRuntime.Instance.Hero.enabled;
-            WorldRuntime.Instance.Hero.enabled = false;
-            CapturingInput = true;
+            world.Hero.SetInputBlocked(HeroMotor.InputBlock.DebugPanel, true);
             panel.SetActive(true);
-            status.text = WorldRuntime.Instance.IsAuthority ? "이동할 지역을 선택하세요" : "지역 이동은 호스트만 사용할 수 있습니다";
+            status.text = world.IsAuthority ? "이동할 지역을 선택하세요" : "지역 이동은 호스트만 사용할 수 있습니다";
         }
         public void Close()
         {
             if (travelling) return;
             panel.SetActive(false);
-            // Keep ESC consumed through the remainder of this frame.
-            ReleaseInput();
-            WorldRuntime.Instance.Hero.enabled = restoreMotor;
-        }
-        private async void ReleaseInput()
-        {
-            await Awaitable.NextFrameAsync(destroyCancellationToken);
-            CapturingInput = panel.activeSelf;
+            world.Hero.SetInputBlocked(HeroMotor.InputBlock.DebugPanel, false);
         }
         public async void Travel(int index)
         {
-            var world = WorldRuntime.Instance;
             if (travelling || !world.IsAuthority) return;
             travelling = true;
             string title = index == definition.regions.Length ? "달그늘 길" : definition.regions[index].title;
@@ -67,13 +61,18 @@ namespace DoHwa.UI
                     }
                     position.y = definition.Height(position.x, position.z, world.State.seed) + .3f;
                 }
-                await WorldMapSession.Instance.DebugTravelAsync(scene, position);
+                await maps.DebugTravelAsync(scene, position);
                 status.text = title + " / 이동 완료";
             }
             catch (OperationCanceledException) { }
             catch (Exception e) { status.text = "이동 실패: " + e.Message; Debug.LogException(e); }
             finally { travelling = false; }
         }
-        private void OnDestroy() => CapturingInput = false;
+        private void OnDisable()
+        {
+            if (panel.activeSelf && world && world.Hero)
+                world.Hero.SetInputBlocked(HeroMotor.InputBlock.DebugPanel, false);
+            panel.SetActive(false);
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 namespace DoHwa.UI
 {
@@ -10,7 +10,7 @@ namespace DoHwa.UI
         private bool visible;
         private async void LateUpdate()
         {
-            bool requested=navigation.IsSubpage;
+            bool requested = navigation.IsSubpage || SystemUI.PopupCapturesInput;
             foreach(var popup in popups)requested|=popup.activeInHierarchy;
             if(visible==requested)return;
             visible=requested;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace DoHwa.World
@@ -42,10 +42,7 @@ namespace DoHwa.World
 
         private void Awake()
         {
-            world = WorldRuntime.Instance;
-            if (!world || !world.Hero) { enabled=false; return; }
-            worldLifetime=world.destroyCancellationToken.Register(StopSimulation);
-            heroLifetime=world.Hero.destroyCancellationToken.Register(StopSimulation);
+            if (!world) enabled = false;
             TryGetComponent<CharacterController>(out controller);
             home = transform.position; health = maximumHealth;
             foreach (var parameter in animator.parameters)
@@ -55,6 +52,14 @@ namespace DoHwa.World
                     animator.SetFloat("DirectionMode", 1f);
                     break;
                 }
+        }
+
+        internal void Bind(WorldRuntime runtime)
+        {
+            world = runtime;
+            worldLifetime = runtime.destroyCancellationToken.Register(StopSimulation);
+            heroLifetime = runtime.Hero.destroyCancellationToken.Register(StopSimulation);
+            enabled = true;
         }
 
         private void StopSimulation() => enabled=false;
@@ -75,7 +80,7 @@ namespace DoHwa.World
 
         private void LateUpdate()
         {
-            visual.rotation = Camera.main.transform.rotation;
+            visual.rotation = world.Hero.ViewTransform.rotation;
         }
 
         private void Update()
@@ -155,7 +160,7 @@ namespace DoHwa.World
         {
             if (direction.sqrMagnitude < .001f) return;
             worldFacing = direction.normalized;
-            var camera = Camera.main.transform;
+            var camera = world.Hero.ViewTransform;
             float x = Vector3.Dot(direction, Vector3.ProjectOnPlane(camera.right, Vector3.up).normalized);
             float y = Vector3.Dot(direction, Vector3.ProjectOnPlane(camera.forward, Vector3.up).normalized);
             if (useEightWayAnimations)

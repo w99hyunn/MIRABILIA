@@ -1,0 +1,121 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2619452047435195165
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5656543073520625465}
+  - component: {fileID: 6630881940699647208}
+  m_Layer: 0
+  m_Name: Timber_JadeBamboo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5656543073520625465
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2619452047435195165}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4097093951402466744}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6630881940699647208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2619452047435195165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b88bb1c5ac503547b236cea73e03c37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.World.WorldResource
+  resourceId: 
+  title: "\uBAA9\uC7AC"
+  yield:
+    item: 4
+    amount: 3
+  respawnSeconds: 180
+  visual: {fileID: 7082012621858993484}
+--- !u!1001 &8194846246425796904
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5656543073520625465}
+    m_Modifications:
+    - target: {fileID: 1437120844296606820, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_Name
+      value: JadeBamboo
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+--- !u!4 &4097093951402466744 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5287854899887471760, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+  m_PrefabInstance: {fileID: 8194846246425796904}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &7082012621858993484 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1437120844296606820, guid: e835a399a7feb6344b4752c66ff921a1, type: 3}
+  m_PrefabInstance: {fileID: 8194846246425796904}
+  m_PrefabAsset: {fileID: 0}

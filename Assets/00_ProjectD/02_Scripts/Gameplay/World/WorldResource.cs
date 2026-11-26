@@ -13,8 +13,7 @@ namespace DoHwa.World
         public string Title => title;
         public ItemAmount Yield => yield;
         public int RespawnSeconds => respawnSeconds;
-        public void Configure(string id, string label, ItemAmount reward, GameObject art)
-        { resourceId=id; title=label; yield=reward; visual=art; }
+        public void SetSpawnId(string id) => resourceId = id;
 
         public void SetAvailable(bool available) { visual.SetActive(available); }
     }

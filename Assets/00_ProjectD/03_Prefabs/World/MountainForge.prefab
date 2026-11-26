@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3669432872176642643}
   - component: {fileID: 8072670118181437542}
+  - component: {fileID: 3565485991427048142}
   m_Layer: 0
   m_Name: MountainForge
   m_TagString: Untagged
@@ -54,6 +55,24 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.7999997, y: 1.3793871, z: 0.8869479}
   m_Center: {x: 0, y: 0.6896935, z: -0.00000008940697}
+--- !u!114 &3565485991427048142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4154466674613596393}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba57b2b05f9b1d74097f72d9b98d723f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.World.WorldBuilding
+  visibility:
+    renderers:
+    - {fileID: 1089357639360314528}
+    lights: []
+    volumes: []
+  garden: {fileID: 0}
 --- !u!1 &6297930412960977038
 GameObject:
   m_ObjectHideFlags: 0

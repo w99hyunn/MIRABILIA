@@ -90,8 +90,8 @@ namespace OpenFrame.Editor
             {
                 var scene=SceneManager.GetSceneByName(r.sceneName);
                 if(scene.IsValid() && scene.isLoaded)continue;
-                string path=AssetDatabase.FindAssets(r.sceneName+" t:Scene").Select(AssetDatabase.GUIDToAssetPath).FirstOrDefault(p=>System.IO.Path.GetFileNameWithoutExtension(p)==r.sceneName);
-                if(path==null)throw new InvalidOperationException("맵 씬 없음: "+r.sceneName);
+                if (!r.EditorScene) throw new InvalidOperationException("맵 씬 참조 누락: " + r.title);
+                string path = AssetDatabase.GetAssetPath(r.EditorScene);
                 openedScenes.Add(EditorSceneManager.OpenScene(path,OpenSceneMode.Additive));
             }
             previewScene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Additive);

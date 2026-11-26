@@ -31,7 +31,30 @@ namespace DoHwa
         private Vector3 velocity;
         private Vector3 facing = Vector3.back;
         public Vector3 Facing => facing;
-        public bool InputBlocked { get; set; }
+        public Transform ViewTransform => cameraTransform;
+        [System.Flags]
+        public enum InputBlock { Menu = 1, DebugPanel = 2 }
+
+        private InputBlock inputBlocks;
+        public bool InputBlocked => inputBlocks != 0;
+
+        public void SetInputBlocked(InputBlock source, bool blocked)
+        {
+            if (blocked) inputBlocks |= source;
+            else inputBlocks &= ~source;
+            if (blocked) ResetMotion();
+        }
+
+        public void Teleport(Vector3 position)
+        {
+            bool wasEnabled = controller.enabled;
+            controller.enabled = false;
+            transform.position = position;
+            controller.enabled = wasEnabled;
+            ResetMotion();
+        }
+
+        public float GroundOffset => controller.height * .5f - controller.center.y + controller.skinWidth;
         private Vector3 dashDirection;
         private float verticalSpeed;
         private float dashRemaining;
@@ -93,6 +116,11 @@ namespace DoHwa
             move.Disable();
             run.Disable();
             dash.Disable();
+            ResetMotion();
+        }
+
+        private void ResetMotion()
+        {
             velocity = Vector3.zero;
             dashRemaining = 0f;
             wasDashing = false;

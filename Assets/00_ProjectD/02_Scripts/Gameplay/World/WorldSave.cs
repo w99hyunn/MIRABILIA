@@ -28,10 +28,7 @@ namespace DoHwa.World
         {
             string path = PathFor(slot);
             if (!File.Exists(path)) return new WorldState();
-            var state = JsonUtility.FromJson<WorldState>(File.ReadAllText(path));
-            if (state == null || state.version != 1 || state.players == null || state.buildings == null)
-                throw new InvalidDataException("지원되지 않거나 손상된 월드 저장 파일입니다.");
-            return state;
+            return WorldState.FromJson(File.ReadAllText(path));
         }
     }
 }

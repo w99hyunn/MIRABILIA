@@ -79,6 +79,14 @@ namespace DoHwa.World
         public List<string> openedCaches = new();
         public List<string> pacts = new();
 
+        public static WorldState FromJson(string json)
+        {
+            var state = JsonUtility.FromJson<WorldState>(json);
+            if (state == null || state.version != 1 || state.players == null || state.buildings == null)
+                throw new System.IO.InvalidDataException("지원되지 않거나 손상된 월드 데이터입니다.");
+            return state;
+        }
+
         public SurvivorState Player(string id) => players.Find(p => p.id == id);
         public SurvivorState GetOrCreatePlayer(string id, GameCatalog catalog)
         {

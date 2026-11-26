@@ -7,7 +7,7 @@ namespace DoHwa.UI
 {
     public sealed class InventorySortMenu : MonoBehaviour
     {
-        [SerializeField] private RpgUiController owner;
+        public event System.Action<int> SortSelected;
         [SerializeField] private RectTransform anchor, panel;
         [SerializeField] private GameObject overlay;
         [SerializeField] private CanvasGroup group;
@@ -37,7 +37,7 @@ namespace DoHwa.UI
             animator.Play("Open",0,0); animator.Update(0);
             EventSystem.current.SetSelectedGameObject(options[selected].gameObject);
         }
-        private void Choose(int index) { selected=index; owner.SetSort(index); Hide(); }
+        private void Choose(int index) { selected=index; SortSelected?.Invoke(index); Hide(); }
         public void Hide() { overlay.SetActive(false); EventSystem.current.SetSelectedGameObject(anchor.gameObject); }
         private void OnDisable() => overlay.SetActive(false);
     }

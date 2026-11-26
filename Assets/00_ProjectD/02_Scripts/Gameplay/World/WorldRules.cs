@@ -65,6 +65,17 @@ namespace DoHwa.World
                 new[] { new ItemAmount(recipe.result.item, recipe.result.amount * quantity) }, out reason);
         }
 
+        public static bool HasStation(WorldState world, SurvivorState player, GameCatalog catalog, StationKind station)
+        {
+            if (station == StationKind.Hand) return true;
+            foreach (var building in world.buildings)
+            {
+                if (building.mapScene == player.mapScene && (building.position - player.position).sqrMagnitude < 16f
+                    && catalog.Building(building.definition).station == station) return true;
+            }
+            return false;
+        }
+
         public static int MaxCraftCount(SurvivorState player, GameCatalog catalog, CraftRecipe recipe, StationKind station)
         {
             if (recipe == null || recipe.result.amount <= 0 || !catalog.ValidItem(recipe.result.item)
@@ -126,7 +137,7 @@ namespace DoHwa.World
         public static bool Dismantle(WorldState world, SurvivorState player, GameCatalog catalog, string id, out string reason)
         {
             var building = world.buildings.Find(b => b.id == id);
-            if (building == null || building.owner != player.id || Vector3.Distance(player.position, building.position) > 4f)
+            if (building == null || building.mapScene != player.mapScene || building.owner != player.id || Vector3.Distance(player.position, building.position) > 4f)
             { reason = "가까운 내 건물만 회수할 수 있습니다"; return false; }
             if (catalog.Building(building.definition).use == BuildingUse.Garden && building.plantedAt >= 0)
             { reason = "작물을 수확한 뒤 회수하세요"; return false; }

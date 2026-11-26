@@ -5,7 +5,6 @@ using UnityEngine.SceneManagement;
 
 namespace DoHwa.World
 {
-    [DefaultExecutionOrder(-900)]
     public sealed class WorldMapSession : MonoBehaviour
     {
         [SerializeField] private WorldRuntime world;
@@ -20,7 +19,6 @@ namespace DoHwa.World
         private bool debugTravelling;
         private float refreshAt;
         private string visibleMap;
-        public static WorldMapSession Instance { get; private set; }
         public bool LocalMapReady => !shuttingDown && !debugTravelling && world.LocalPlayer != null
             && visibleMap == world.LocalPlayer.mapScene && loaded.Contains(world.LocalPlayer.mapScene);
         public async Awaitable DebugTravelAsync(string map, Vector3 position)
@@ -50,10 +48,7 @@ namespace DoHwa.World
                     }
                     await Awaitable.NextFrameAsync(token);
                 }
-                hero.TryGetComponent<CharacterController>(out var body);
-                body.enabled = false;
-                hero.transform.position = position;
-                body.enabled = true;
+                hero.Teleport(position);
                 world.LocalPlayer.position = position;
                 world.LocalPlayer.travelRevision++;
             }
@@ -72,9 +67,37 @@ namespace DoHwa.World
         public static string LegacyMap(Vector3 position) => position.y > 70 && position.y < 95 && Mathf.Abs(position.x)<15 && Mathf.Abs(position.z-10)<15 ? "Moonshadow" : "PeachValley";
         public string SurfaceScene(Vector3 position) => surface.regions[surface.Biome(position.x,position.z,world.State.seed)].sceneName;
 
+#if UNITY_EDITOR
+        [SerializeField] private UnityEditor.SceneAsset moonshadowScene;
+
+        private void OnValidate()
+        {
+            UnityEditor.EditorApplication.delayCall -= OpenEditorMap;
+            UnityEditor.EditorApplication.delayCall += OpenEditorMap;
+        }
+
+        private void OpenEditorMap()
+        {
+            if (!this || UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode) return;
+            var scene = gameObject.scene;
+            if (!scene.isLoaded || scene.name != "Ingame" || UnityEditor.SceneManagement.EditorSceneManager.IsPreviewScene(scene)) return;
+            var position = hero.transform.position;
+            var slot = WorldSelection.Slot;
+            int seed = System.IO.File.Exists(WorldSave.PathFor(slot)) ? WorldSave.Read(slot).seed : 0;
+            var asset = LegacyMap(position) == "Moonshadow" ? moonshadowScene
+                : surface.regions[surface.Biome(position.x, position.z, seed)].EditorScene;
+            if (!asset || SceneManager.GetSceneByName(asset.name).isLoaded) return;
+            var active = SceneManager.GetActiveScene();
+            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(UnityEditor.AssetDatabase.GetAssetPath(asset),
+                UnityEditor.SceneManagement.OpenSceneMode.Additive);
+            SceneManager.SetActiveScene(active);
+        }
+#endif
+
         private void Awake()
         {
-            Instance = this; hero.enabled = false;
+            WorldMapEnvironment.Subscribe(RegisterEnvironment);
+            hero.enabled = false;
             foreach (string name in mapScenes)
                 if (SceneManager.GetSceneByName(name).isLoaded) loaded.Add(name);
         }
@@ -82,15 +105,15 @@ namespace DoHwa.World
         {
             foreach(var building in world.State.buildings)
                 if(building.mapScene!="Moonshadow")building.mapScene=SurfaceScene(building.position);
-            foreach (string name in loaded) RegisterEnvironment(name);
-            world.RefreshMapObjects();
+            world.RefreshMapObjects(environments.Values);
             world.Changed += Refresh; Refresh();
             if (LocalMapReady) hero.enabled = true;
         }
-        private void RegisterEnvironment(string name)
+        private void RegisterEnvironment(WorldMapEnvironment environment)
         {
-            foreach (var root in SceneManager.GetSceneByName(name).GetRootGameObjects())
-                if (root.TryGetComponent<WorldMapEnvironment>(out var environment)) environments[name] = environment;
+            if (shuttingDown) return;
+            environments[environment.gameObject.scene.name] = environment;
+            environment.Bind(world);
         }
         private void Update()
         {
@@ -136,8 +159,7 @@ namespace DoHwa.World
                     if (!SceneManager.GetSceneByName(name).isLoaded)
                         await Awaitable.FromAsyncOperation(SceneManager.LoadSceneAsync(name, LoadSceneMode.Additive), destroyCancellationToken);
                     loaded.Add(name);
-                    RegisterEnvironment(name);
-                    world.RefreshMapObjects();
+                    world.RefreshMapObjects(environments.Values);
                 }
                 var required = RequiredMaps();
                 foreach (string name in new List<string>(loaded))
@@ -146,20 +168,11 @@ namespace DoHwa.World
                     loaded.Remove(name);
                     environments.Remove(name);
                     await Awaitable.FromAsyncOperation(SceneManager.UnloadSceneAsync(name), destroyCancellationToken);
-                    world.RefreshMapObjects();
+                    world.RefreshMapObjects(environments.Values);
                 }
-                foreach (string name in loaded)
-                    foreach (var root in SceneManager.GetSceneByName(name).GetRootGameObjects())
-                    {
-                        bool visible = name == world.LocalPlayer.mapScene;
-                        bool surfaceVisible = name!="Moonshadow" && world.LocalPlayer.mapScene!="Moonshadow";
-                        foreach (var renderer in root.GetComponentsInChildren<Renderer>(true)) renderer.forceRenderingOff = !(visible || (surfaceVisible && renderer is not ParticleSystemRenderer));
-                        foreach (var light in root.GetComponentsInChildren<Light>(true)) {
-                            light.enabled = visible && name=="Moonshadow";
-                            if(light.enabled && light.type==LightType.Directional)RenderSettings.sun=light;
-                        }
-                        foreach (var volume in root.GetComponentsInChildren<UnityEngine.Rendering.Volume>(true)) volume.enabled = visible && name=="Moonshadow";
-                    }
+                string currentMap = world.LocalPlayer.mapScene;
+                foreach (var environment in environments.Values) environment.SetVisibleMap(currentMap);
+                foreach (var building in world.Buildings) if (building) building.SetVisibleMap(currentMap);
                 if (paused && loaded.Contains(world.LocalPlayer.mapScene))
                 {
                     // Map activation completes before its streamers build their initial colliders in Start.
@@ -183,11 +196,8 @@ namespace DoHwa.World
                     }
                     // Keep movement paused and retry loading readiness instead of falling through empty ground.
                     if (!found) return;
-                    hero.TryGetComponent<CharacterController>(out var body);
-                    position.y = groundHeight + body.height * .5f - body.center.y + body.skinWidth;
-                    body.enabled = false;
-                    hero.transform.position = position;
-                    body.enabled = true;
+                    position.y = groundHeight + hero.GroundOffset;
+                    hero.Teleport(position);
                     world.LocalPlayer.position = position;
                     hero.enabled = true;
                 }
@@ -206,8 +216,12 @@ namespace DoHwa.World
                 await Awaitable.FromAsyncOperation(SceneManager.UnloadSceneAsync(name), destroyCancellationToken);
             loaded.Clear();
             environments.Clear();
-            world.RefreshMapObjects();
+            world.RefreshMapObjects(environments.Values);
         }
-        private void OnDestroy() { world.Changed -= Refresh; Instance = null; }
+        private void OnDestroy()
+        {
+            WorldMapEnvironment.Unsubscribe(RegisterEnvironment);
+            world.Changed -= Refresh;
+        }
     }
 }

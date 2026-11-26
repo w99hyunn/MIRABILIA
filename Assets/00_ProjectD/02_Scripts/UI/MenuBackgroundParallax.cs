@@ -8,32 +8,20 @@ namespace DoHwa.UI
     public sealed class MenuBackgroundParallax : MonoBehaviour
     {
         [SerializeField] private float distance = 12f;
-        [SerializeField] private Texture2D sky;
-        [SerializeField] private Texture2D island;
-        [SerializeField] private Material islandWaterMaterial;
         [SerializeField] private Animator peachAnimator;
-        [SerializeField] private Texture2D windowLight;
-        [SerializeField] private Texture2D star;
 
         private static readonly Vector2 ArtworkSize = new(1672f, 941f);
         private static readonly int PointerLean = Animator.StringToHash("PointerLean");
         private static readonly int PeachTap = Animator.StringToHash("PeachTap");
-        private static readonly Vector2[] StarPositions =
-        {
-            new(113, 326), new(219, 264), new(330, 125), new(357, 343),
-            new(189, 598), new(306, 657), new(472, 159), new(474, 736),
-            new(1285, 67), new(1452, 191), new(1364, 353), new(1573, 371),
-            new(1211, 476), new(1329, 576), new(1506, 627), new(1188, 701),
-            new(944, 849), new(606, 836)
-        };
 
-        private Image artwork;
+        [SerializeField] private Image artwork;
+
+        [SerializeField] private RectTransform layers;
+        [SerializeField] private RectTransform stars;
+        [SerializeField] private RectTransform islandMotion;
+        [SerializeField] private RawImage window;
+        [SerializeField] private RawImage[] starImages;
         private RectTransform rect;
-        private RectTransform layers;
-        private RectTransform stars;
-        private RectTransform islandMotion;
-        private RawImage window;
-        private RawImage[] starImages;
         private Camera canvasCamera;
         private Vector2 origin;
         private Vector3 originalScale;
@@ -43,35 +31,10 @@ namespace DoHwa.UI
 
         private void Awake()
         {
-            TryGetComponent<RectTransform>(out rect);
-            TryGetComponent<Image>(out artwork);
+            rect = artwork.rectTransform;
             canvasCamera = artwork.canvas.worldCamera;
             origin = rect.anchoredPosition;
             originalScale = rect.localScale;
-
-            layers = AddGroup("Orchard layers", rect);
-            RawImage skyImage = AddLayer("Sky", layers, sky, Vector2.zero, ArtworkSize, new Vector2(0.5f, 0.5f));
-            skyImage.material = artwork.material;
-
-            stars = AddGroup("Twinkling stars", layers);
-            starImages = new RawImage[StarPositions.Length];
-            for (int index = 0; index < starImages.Length; index++)
-            {
-                float size = 10f + index % 5 * 3f;
-                Vector2 sizeInArtwork = Vector2.one * size;
-                starImages[index] = AddLayer("Star", stars, star, StarPositions[index] - sizeInArtwork * 0.5f,
-                    sizeInArtwork, new Vector2(0.5f, 0.5f));
-                starImages[index].color = Color.clear;
-            }
-
-            islandMotion = (RectTransform)peachAnimator.transform;
-            islandMotion.SetParent(layers, false);
-            RawImage islandImage = AddLayer("Island", islandMotion, island, new Vector2(288, -80),
-                new Vector2(1072, 976), new Vector2(0.5f, 0.5f));
-            islandImage.material = islandWaterMaterial;
-            islandImage.rectTransform.SetAsFirstSibling();
-            window = AddLayer("Window light", islandMotion, windowLight, new Vector2(543, 370),
-                new Vector2(173, 107), new Vector2(0.5f, 0.5f));
         }
 
         private void OnEnable()
@@ -150,8 +113,11 @@ namespace DoHwa.UI
             {
                 float wave = 0.5f + 0.5f * Mathf.Sin(time * (0.96f + index % 7 * 0.17f) + index * 2.39996f);
                 float twinkle = wave * wave * wave * wave;
-                float proximity = hasPointer ? Proximity(starPointer, StarPositions[index], 145f) : 0f;
                 RawImage sparkle = starImages[index];
+                var starRect = sparkle.rectTransform;
+                Vector2 center = (starRect.anchorMin + starRect.anchorMax) * 0.5f;
+                Vector2 position = new(center.x * ArtworkSize.x, (1f - center.y) * ArtworkSize.y);
+                float proximity = hasPointer ? Proximity(starPointer, position, 145f) : 0f;
                 sparkle.color = new Color(1f, 1f, 1f, Mathf.Clamp01(twinkle * 0.88f + proximity * 0.32f));
                 sparkle.rectTransform.localScale = Vector3.one * (0.7f + twinkle * 0.45f + proximity * 0.16f);
             }
@@ -181,39 +147,6 @@ namespace DoHwa.UI
         private static float Proximity(Vector2 pointer, Vector2 focalPoint, float radius)
         {
             return Mathf.Clamp01(1f - Vector2.Distance(pointer, focalPoint) / radius);
-        }
-
-        private static RectTransform AddGroup(string name, RectTransform parent)
-        {
-            var group = new GameObject(name, typeof(RectTransform));
-            group.layer = parent.gameObject.layer;
-            var transform = (RectTransform)group.transform;
-            transform.SetParent(parent, false);
-            transform.anchorMin = Vector2.zero;
-            transform.anchorMax = Vector2.one;
-            transform.offsetMin = Vector2.zero;
-            transform.offsetMax = Vector2.zero;
-            return transform;
-        }
-
-        private static RawImage AddLayer(string name, RectTransform parent, Texture2D texture,
-            Vector2 topLeft, Vector2 size, Vector2 pivot)
-        {
-            var layer = new GameObject(name, typeof(RectTransform), typeof(RawImage));
-            layer.layer = parent.gameObject.layer;
-            layer.TryGetComponent<RawImage>(out var image);
-            image.texture = texture;
-            image.raycastTarget = false;
-
-            Vector2 bottomRight = topLeft + size;
-            RectTransform transform = image.rectTransform;
-            transform.SetParent(parent, false);
-            transform.pivot = pivot;
-            transform.anchorMin = new Vector2(topLeft.x / ArtworkSize.x, 1f - bottomRight.y / ArtworkSize.y);
-            transform.anchorMax = new Vector2(bottomRight.x / ArtworkSize.x, 1f - topLeft.y / ArtworkSize.y);
-            transform.offsetMin = Vector2.zero;
-            transform.offsetMax = Vector2.zero;
-            return image;
         }
     }
 }

@@ -326,6 +326,7 @@ GameObject:
   - component: {fileID: 7846160713961943507}
   - component: {fileID: 7664820555810823643}
   - component: {fileID: 8497452080575015394}
+  - component: {fileID: 8162119883358535527}
   m_Layer: 0
   m_Name: HerbGarden
   m_TagString: Untagged
@@ -404,6 +405,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 439b1d2b816b4c04a953474a23500383, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoHwa.World.GardenPresentation
+--- !u!114 &8162119883358535527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2987842608444702625}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba57b2b05f9b1d74097f72d9b98d723f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.World.WorldBuilding
+  visibility:
+    renderers:
+    - {fileID: 6007304985446001336}
+    - {fileID: 86234049151209476}
+    - {fileID: 3313151538927557135}
+    - {fileID: 8617239222525193284}
+    - {fileID: 9053219682928956143}
+    - {fileID: 1407749399163011440}
+    - {fileID: 7714225531812541444}
+    - {fileID: 6855357608917199940}
+    - {fileID: 8617642156735211140}
+    - {fileID: 2181672216094960815}
+    lights: []
+    volumes: []
+  garden: {fileID: 8497452080575015394}
 --- !u!1 &3510540257585395100
 GameObject:
   m_ObjectHideFlags: 0

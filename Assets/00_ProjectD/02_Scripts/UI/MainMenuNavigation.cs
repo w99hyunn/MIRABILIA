@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 namespace DoHwa.UI
 {
-    public sealed class MainMenuNavigation : MonoBehaviour
+    public sealed class MainMenuNavigation : SceneScreen
     {
         [SerializeField] private MainMenuController controller;
         [SerializeField] private LoginUtilityPanel utilities;
@@ -58,6 +58,7 @@ namespace DoHwa.UI
         }
         public void HandleEscape()
         {
+            if (SystemUI.PopupCapturesInput) return;
             if(controller.CloseSavePopup())return;
             if(utilities.CloseTopPopup())return;
             if(controller.IsCreateOpen){controller.CancelCreate();return;}

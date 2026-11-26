@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DoHwa.World;
 using Steamworks;
 using UnityEngine;
@@ -21,11 +21,13 @@ namespace DoHwa.UI
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetSession()=>SignedIn=false;
         public void Configure(UnityEngine.UI.Button button,TMPro.TMP_Text label) { startButton=button; startLabel=label; }
-        private void RestoreStart(string text)
+        private string idleLabel;
+        private void ShowLoginError(string message)
         {
             confettiMaterial.SetFloat("_Clicked",0);
             entering=false;startGroup.blocksRaycasts=true;startGroup.interactable=true;
-            startLabel.text=text;startAnimator.Play("Normal",0,0);
+            startLabel.text=idleLabel;startAnimator.Play("Normal",0,0);
+            SystemUI.ShowNotice("로그인 안내", message);
         }
         public async void Enter()
         {
@@ -34,21 +36,30 @@ namespace DoHwa.UI
             foreach(var parameter in startAnimator.parameters)
                 if(parameter.type==AnimatorControllerParameterType.Trigger)startAnimator.ResetTrigger(parameter.nameHash);
             confettiMaterial.SetFloat("_Clicked",1);
+            idleLabel=startLabel.text;
             startLabel.text="접속 중";
             startAnimator.CrossFadeInFixedTime("Commit",.08f,0,0);
+            string message;
             try
             {
                 await Awaitable.NextFrameAsync(destroyCancellationToken);
                 while(startAnimator.IsInTransition(0) || !startAnimator.GetCurrentAnimatorStateInfo(0).IsName("Commit") || startAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime<1)
                     await Awaitable.NextFrameAsync(destroyCancellationToken);
-                if(!SteamRuntime.Ready || !SteamUser.BLoggedOn())
+                if(SteamRuntime.Ready && SteamUser.BLoggedOn())
                 {
-                    RestoreStart("Steam 로그인 후 다시 시도");return;
+                    SignedIn=true;
+                    navigation.CompleteLogin();
+                    return;
                 }
-                SignedIn=true;navigation.CompleteLogin();
+                message="Steam에 로그인한 후 다시 시도해 주세요.";
             }
-            catch(OperationCanceledException){}
-            catch(Exception exception){Debug.LogException(exception);RestoreStart("다시 시도");}
+            catch(OperationCanceledException){return;}
+            catch(Exception exception)
+            {
+                Debug.LogException(exception);
+                message="로그인하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+            }
+            ShowLoginError(message);
         }
     }
 }

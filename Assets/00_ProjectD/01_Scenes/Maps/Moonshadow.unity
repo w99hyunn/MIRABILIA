@@ -449,6 +449,21 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2451493689877243843, guid: 1dc4dbdadeccc4146951a22ef2b35fd0, type: 3}
   m_PrefabInstance: {fileID: 10449322}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &10449324 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1995016391137662565, guid: 1dc4dbdadeccc4146951a22ef2b35fd0, type: 3}
+  m_PrefabInstance: {fileID: 10449322}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &10449325 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5345077242147735474, guid: 1dc4dbdadeccc4146951a22ef2b35fd0, type: 3}
+  m_PrefabInstance: {fileID: 10449322}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &10449326 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1971192265864694689, guid: 1dc4dbdadeccc4146951a22ef2b35fd0, type: 3}
+  m_PrefabInstance: {fileID: 10449322}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &76784052
 GameObject:
   m_ObjectHideFlags: 0
@@ -2395,6 +2410,11 @@ PrefabInstance:
 --- !u!4 &930627099 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6369176526809146880, guid: 6faf588cac52c8f48a9345abbce46e19, type: 3}
+  m_PrefabInstance: {fileID: 930627098}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &930627100 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3695721673437363363, guid: 6faf588cac52c8f48a9345abbce46e19, type: 3}
   m_PrefabInstance: {fileID: 930627098}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &963375856
@@ -5170,6 +5190,11 @@ PrefabInstance:
 --- !u!4 &1113362618 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8186178219991310385, guid: 01484f3dde653ca41962feb197a3009c, type: 3}
+  m_PrefabInstance: {fileID: 1113362617}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1113362619 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5184288132055706490, guid: 01484f3dde653ca41962feb197a3009c, type: 3}
   m_PrefabInstance: {fileID: 1113362617}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1124271031
@@ -8871,6 +8896,7 @@ GameObject:
   - component: {fileID: 1738175506}
   - component: {fileID: 1738175505}
   - component: {fileID: 1738175504}
+  - component: {fileID: 2089100001}
   m_Layer: 0
   m_Name: Moonshadow Light
   m_TagString: Untagged
@@ -9685,6 +9711,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6369176526809146880, guid: 6faf588cac52c8f48a9345abbce46e19, type: 3}
   m_PrefabInstance: {fileID: 2060766433}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &2060766435 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3695721673437363363, guid: 6faf588cac52c8f48a9345abbce46e19, type: 3}
+  m_PrefabInstance: {fileID: 2060766433}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2066344805
 GameObject:
   m_ObjectHideFlags: 0
@@ -9738,6 +9769,67 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.6, y: 4, z: 1.8}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2089100000 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1773694327621227813, guid: 1dc4dbdadeccc4146951a22ef2b35fd0, type: 3}
+  m_PrefabInstance: {fileID: 10449322}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b21c972c3aef62141ab565770637d75c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.World.WorldSupplyCache
+--- !u!114 &2089100001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1738175503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0555f08f2606d4e45ae5c790b3640e19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoHwa.World.WorldMapEnvironment
+  blossomWeather: {fileID: 0}
+  gates:
+  - {fileID: 2045078283}
+  enemies: []
+  caches:
+  - {fileID: 2089100000}
+  resources: []
+  gardens: []
+  seededRegions: []
+  visibility:
+    renderers:
+    - {fileID: 1721650774}
+    - {fileID: 1698000614}
+    - {fileID: 408731630}
+    - {fileID: 838285579}
+    - {fileID: 1661736084}
+    - {fileID: 1269220948}
+    - {fileID: 190077643}
+    - {fileID: 653170932}
+    - {fileID: 1627988351}
+    - {fileID: 1099897901}
+    - {fileID: 1113362619}
+    - {fileID: 1256320675}
+    - {fileID: 10449326}
+    - {fileID: 10449325}
+    - {fileID: 10449324}
+    - {fileID: 1613939999}
+    - {fileID: 963375858}
+    - {fileID: 336064853}
+    - {fileID: 2138073665}
+    - {fileID: 930627100}
+    - {fileID: 2060766435}
+    lights:
+    - {fileID: 1738175505}
+    - {fileID: 2045078284}
+    volumes:
+    - {fileID: 1124271032}
+  streamers: []
 --- !u!1 &2119858599
 GameObject:
   m_ObjectHideFlags: 0

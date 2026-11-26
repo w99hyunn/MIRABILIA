@@ -26,7 +26,7 @@ namespace DoHwa.World
     {
         public string id;
         public string title;
-        public GameObject prefab;
+        public WorldBuilding prefab;
         public Vector2Int footprint = Vector2Int.one;
         public StationKind station;
         public ItemAmount[] cost;

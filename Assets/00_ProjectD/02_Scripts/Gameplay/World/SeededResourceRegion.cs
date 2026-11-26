@@ -5,34 +5,16 @@ namespace DoHwa.World
 {
     public sealed class SeededResourceRegion : MonoBehaviour
     {
-        private WorldRuntime world;
-        private bool subscribed;
-        private System.Threading.CancellationTokenRegistration worldLifetime;
         [SerializeField] private Collider terrain;
         [SerializeField] private WorldResource[] nodes;
         [SerializeField] private Vector2 size = new(8, 14);
         [SerializeField] private int regionSalt = 173;
         [SerializeField] private float minimumSpacing = 1.8f;
         private int appliedSeed = -1;
-        private void Awake()
+        public void ApplySeed(int seed)
         {
-            world = WorldRuntime.Instance;
-            if (!world) { enabled = false; return; }
-            worldLifetime = world.destroyCancellationToken.Register(StopSession);
-        }
-        private void StopSession()
-        {
-            enabled = false;
-            if (!subscribed) return;
-            world.Changed -= Refresh;
-            subscribed = false;
-        }
-        private void Start() { world.Changed += Refresh; subscribed = true; Refresh(); }
-        private void OnDestroy() { worldLifetime.Dispose(); StopSession(); }
-        private void Refresh()
-        {
-            if (appliedSeed == world.State.seed) return;
-            appliedSeed = world.State.seed;
+            if (appliedSeed == seed) return;
+            appliedSeed = seed;
             var random = new System.Random(appliedSeed ^ regionSalt);
             var positions = new Vector3[nodes.Length];
             for (int i = 0; i < nodes.Length; i++)

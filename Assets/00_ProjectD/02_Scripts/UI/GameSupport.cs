@@ -5,20 +5,30 @@ namespace DoHwa
 {
     public static class GameSupport
     {
+        private static AsyncOperation systemLoad;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
-            EnsureLoaded();
+            systemLoad = null;
         }
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => EnsureLoaded();
 
-        public static void EnsureLoaded()
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        internal static void EnsureLoaded()
         {
-            if (SceneManager.GetSceneByName("System").isLoaded) return;
-            SceneManager.LoadScene("System", LoadSceneMode.Additive);
+            if (SceneManager.GetSceneByName("System").isLoaded || systemLoad is { isDone: false }) return;
+            systemLoad = SceneManager.LoadSceneAsync("System", LoadSceneMode.Additive);
+        }
+
+        internal static async Awaitable WaitUntilLoadedAsync()
+        {
+            EnsureLoaded();
+            if (systemLoad is { isDone: false })
+                await Awaitable.FromAsyncOperation(systemLoad);
         }
     }
 }

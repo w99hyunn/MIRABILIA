@@ -18,10 +18,11 @@ namespace DoHwa.UI
         [SerializeField] private TMP_Text status;
         [SerializeField] private TMP_Text directionLabel;
         private readonly List<WardrobeItemView> cards = new();
-        private readonly List<Material> previewMaterials = new();
-        private DohwaLayeredCharacter previewCharacter;
-        private Camera previewCamera;
-        private RenderTexture previewTexture;
+        [SerializeField] private WardrobeItemView[] initialCards;
+        [SerializeField] private DohwaLayeredCharacter previewCharacter;
+        [SerializeField] private Camera previewCamera;
+        public DohwaLayeredCharacter PreviewCharacter => previewCharacter;
+        public Camera PreviewCamera => previewCamera;
         private string[] draft;
         private int slot;
         private int direction;
@@ -31,6 +32,7 @@ namespace DoHwa.UI
 
         private void Awake()
         {
+            cards.AddRange(initialCards);
             for (int i = 0; i < tabs.Length; i++) { int index = i; tabs[i].onClick.AddListener(() => SelectSlot(index)); }
         }
 
@@ -38,7 +40,7 @@ namespace DoHwa.UI
         {
             wardrobe.Initialize();
             draft = wardrobe.Snapshot();
-            if (!previewCharacter) CreatePreview();
+            previewCharacter.gameObject.SetActive(true);
             direction = 0;
             directionLabel.text = Directions[0];
             walking = false;
@@ -46,40 +48,7 @@ namespace DoHwa.UI
             SelectSlot(0);
         }
 
-        private void CreatePreview()
-        {
-            previewCharacter = Instantiate(wardrobe.Character, new Vector3(10000,-10000,10000), Quaternion.identity);
-            previewCharacter.name = "Wardrobe Preview";
-            var renderers = previewCharacter.GetComponentsInChildren<SpriteRenderer>(true);
-            var previewBounds = renderers[0].bounds;
-            foreach (var renderer in renderers)
-            {
-                previewBounds.Encapsulate(renderer.bounds);
-                renderer.gameObject.layer = 31;
-                var material = new Material(renderer.sharedMaterial);
-                material.SetFloat("_UprightDepth", 0);
-                material.SetFloat("_EnvironmentStrength", 0);
-                material.SetFloat("_ShadowInfluence", 0);
-                renderer.sharedMaterial = material;
-                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                previewMaterials.Add(material);
-            }
-            previewTexture = new RenderTexture(512,512,24) { name = "Wardrobe preview", filterMode = FilterMode.Point };
-            previewTexture.Create();
-            var cameraObject = new GameObject("Wardrobe Preview Camera", typeof(Camera));
-            cameraObject.TryGetComponent<Camera>(out previewCamera);
-            previewCamera.enabled = false;
-            previewCamera.orthographic = true;
-            previewCamera.orthographicSize = Mathf.Max(previewBounds.extents.x, previewBounds.extents.y) * 1.1f;
-            previewCamera.clearFlags = CameraClearFlags.SolidColor;
-            previewCamera.backgroundColor = Color.clear;
-            previewCamera.cullingMask = 1 << 31;
-            previewCamera.nearClipPlane = .01f;
-            previewCamera.farClipPlane = 8;
-            previewCamera.transform.position = previewBounds.center + new Vector3(0,0,-3);
-            previewCamera.targetTexture = previewTexture;
-            preview.texture = previewTexture;
-        }
+        private void OnDisable() => previewCharacter.gameObject.SetActive(false);
 
         private void LateUpdate()
         {
@@ -95,17 +64,17 @@ namespace DoHwa.UI
 
         private void RefreshCards()
         {
-            foreach (var card in cards) Destroy(card.gameObject);
-            cards.Clear();
+            int visibleCount = 0;
             for (int i = 0; i < tabs.Length; i++)
             {
                 tabs[i].TryGetComponent<UiVisualState>(out var visual);
                 visual.SetActiveState(i == slot);
             }
             var equipped = wardrobe.Snapshot();
-            AddCard("미착용", null, "", equipped[slot]);
+            BindCard(visibleCount++, "미착용", null, "", equipped[slot]);
             foreach (var item in wardrobe.Catalog.items)
-                if ((int)item.Slot == slot) AddCard(item.title, item.icon, item.id, equipped[slot]);
+                if ((int)item.Slot == slot) BindCard(visibleCount++, item.title, item.icon, item.id, equipped[slot]);
+            for (int i = visibleCount; i < cards.Count; i++) cards[i].gameObject.SetActive(false);
             var selected = wardrobe.Catalog.Find(draft[slot]);
             itemTitle.text = selected == null ? SlotNames[slot] + " / 미착용" : selected.title;
             itemArt.sprite = selected == null ? null : selected.icon;
@@ -116,12 +85,12 @@ namespace DoHwa.UI
             status.text = changed ? "미리보기 중 / 적용하면 코디가 저장됩니다" : "현재 착용 중인 코디입니다";
         }
 
-        private void AddCard(string label, Sprite icon, string id, string equippedId)
+        private void BindCard(int index, string label, Sprite icon, string id, string equippedId)
         {
-            var card = Instantiate(itemTemplate, content);
+            if (index == cards.Count) cards.Add(Instantiate(itemTemplate, content));
+            var card = cards[index];
             card.gameObject.SetActive(true);
-            card.Bind(label, icon, draft[slot] == id, equippedId == id, () => Choose(id));
-            cards.Add(card);
+            card.Bind(this, id, label, icon, draft[slot] == id, equippedId == id);
         }
 
         public void Choose(string id)
@@ -136,13 +105,6 @@ namespace DoHwa.UI
         public void Apply() { wardrobe.Apply(draft); owner.Close(); }
         public void Cancel() => owner.Close();
 
-        private void OnDestroy()
-        {
-            if (previewCharacter) Destroy(previewCharacter.gameObject);
-            if (previewCamera) Destroy(previewCamera.gameObject);
-            if (previewTexture) { previewTexture.Release(); Destroy(previewTexture); }
-            foreach (var material in previewMaterials) Destroy(material);
-        }
     }
 }
 

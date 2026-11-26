@@ -10,13 +10,10 @@ namespace DoHwa.UI
 {
     public sealed class MainMenuController : MonoBehaviour
     {
-        [SerializeField] private Transform slots;
-        [SerializeField] private WorldSaveRow rowPrefab;
         [SerializeField] private TMP_Text selectedTitle;
         [SerializeField] private TMP_Text status;
         [SerializeField] private TMP_Text members;
         [SerializeField] private RoomRoster roster;
-        [SerializeField] private TMP_Text empty;
         [SerializeField] private TMP_Text startLabel;
         [SerializeField] private TMP_Text createStatus;
         [SerializeField] private TMP_InputField worldName;
@@ -43,7 +40,7 @@ namespace DoHwa.UI
         [SerializeField] private UiPanelReveal roomProgressReveal;
         public bool IsBusy=>busy;
         public void DismissRoomProgress(){if(!busy)roomProgress.SetActive(false);}
-        private readonly List<WorldSaveRow> rows=new();
+        [SerializeField] private WorldSaveListView saveList;
         private CSteamID lobby;
         private ulong hostId;
         private bool ownLobby;
@@ -61,10 +58,10 @@ namespace DoHwa.UI
         }
         private void RefreshSaves()
         {
-            foreach(var row in rows)Destroy(row.gameObject);rows.Clear();selected=null;
-            var saves=WorldSelection.List();
-            foreach(var slot in saves){var row=Instantiate(rowPrefab,slots);row.gameObject.SetActive(true);row.Bind(slot,Select,ShowContext);rows.Add(row);if(slot.valid&&(selected==null||slot.id==WorldSelection.Slot))selected=slot;}
-            empty.gameObject.SetActive(saves.Count==0);
+            var saves = WorldSelection.List();
+            saveList.Render(saves, Select, ShowContext);
+            string preferred = WorldSelection.Slot;
+            selected = saves.Find(slot => slot.valid && slot.id == preferred) ?? saves.Find(slot => slot.valid);
             if(selected!=null)Select(selected);else {selectedTitle.text="새로운 여정을 시작하세요";UpdateState();}
         }
         private void Select(WorldSlot slot)
@@ -72,7 +69,7 @@ namespace DoHwa.UI
             if(busy || (InLobby&&!ownLobby))return;
             selected=slot;WorldSelection.Slot=slot.id;selectedTitle.text=slot.title;
             if(!InLobby)status.text="마지막 저장  "+DateTimeOffset.FromUnixTimeSeconds(slot.savedAt).ToLocalTime().ToString("yyyy.MM.dd  HH:mm")+"\n시드  "+slot.seed;
-            foreach(var row in rows)row.Select(row.Slot==slot.id);
+            saveList.Select(slot.id);
             if(InLobby)SteamMatchmaking.SetLobbyData(lobby,"world",slot.title);
             UpdateState();
         }
@@ -146,7 +143,7 @@ namespace DoHwa.UI
             invite.interactable=!busy&&InLobby&&SteamRuntime.Ready;
             leave.interactable=!busy&&InLobby;
             startLabel.text=busy?"준비 중":InLobby?(ownLobby?"게임 시작":"방장의 시작을 기다리는 중"):"방 만들기";
-            foreach(var row in rows){row.TryGetComponent<Button>(out var b);b.interactable=!busy&&(!InLobby||ownLobby)&&row.Valid;}
+            saveList.SetInteractable(!busy && (!InLobby || ownLobby));
         }
         public async void HostRoom()
         {
@@ -157,13 +154,8 @@ namespace DoHwa.UI
             roomProgressConfirm.SetActive(false);roomProgress.SetActive(true);roomProgress.transform.SetAsLastSibling();
             try
             {
-                bool done=false,failed=false;LobbyCreated_t result=default;
-                using var call=CallResult<LobbyCreated_t>.Create((value,io)=>{result=value;failed=io;done=true;});
-                call.Set(SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypeFriendsOnly,4));
-                float deadline=Time.realtimeSinceStartup+20;
-                while(!done&&Time.realtimeSinceStartup<deadline)await Awaitable.NextFrameAsync(cancellation);
-                if(!done||failed||result.m_eResult!=EResult.k_EResultOK)throw new InvalidOperationException("Steam 방을 열지 못했습니다");
-                lobby=new CSteamID(result.m_ulSteamIDLobby);ownLobby=true;hostId=SteamUser.GetSteamID().m_SteamID;
+                lobby = await SteamRuntime.CreateFriendsLobbyAsync(cancellation);
+                ownLobby=true;hostId=SteamUser.GetSteamID().m_SteamID;
                 SteamMatchmaking.SetLobbyData(lobby,"game",SteamRuntime.Settings.lobbyNamespace);SteamMatchmaking.SetLobbyData(lobby,"protocol",SteamRuntime.Settings.protocol);
                 SteamMatchmaking.SetLobbyData(lobby,"host",hostId.ToString());SteamMatchmaking.SetLobbyData(lobby,"ready","0");SteamMatchmaking.SetLobbyData(lobby,"world",selected.title);
                 SteamFriends.SetRichPresence("connect","+connect_lobby "+lobby.m_SteamID);status.text="친구를 초대하거나 바로 시작하세요";
@@ -202,7 +194,7 @@ namespace DoHwa.UI
             if(!ownLobby&&SteamMatchmaking.GetLobbyData(lobby,"ready")=="1")StartGame();
         }
         public void InviteFriends(){if(InLobby)SteamFriends.ActivateGameOverlayInviteDialog(lobby);}
-        public void Friends(){if(SteamRuntime.Ready)SteamFriends.ActivateGameOverlay("Friends");else status.text="Steam에 로그인해 주세요";}
+        public void Friends(){if(SteamRuntime.Ready)SteamFriends.ActivateGameOverlay("Friends");else SystemUI.ShowNotice("친구 목록", "Steam을 실행하고 로그인해 주세요.");}
         public void LeaveLobby()
         {
             if(InLobby&&SteamRuntime.Ready){if(ownLobby)SteamMatchmaking.SetLobbyJoinable(lobby,false);SteamMatchmaking.LeaveLobby(lobby);SteamFriends.ClearRichPresence();}
@@ -214,7 +206,7 @@ namespace DoHwa.UI
             if(InLobby&&!ownLobby&&SteamMatchmaking.GetLobbyData(lobby,"ready")!="1")return;
             if(!InLobby){HostRoom();return;}
             busy=true;UpdateState();status.text="월드를 불러오는 중";
-            try {if(selected!=null)WorldSelection.Slot=selected.id;WorldSelection.Lobby=lobby.m_SteamID;WorldSelection.HostLobby=ownLobby;handoff=true;await UiSceneTransition.LoadAsync("Ingame");}
+            try {if(selected!=null)WorldSelection.Slot=selected.id;WorldSelection.Lobby=lobby.m_SteamID;WorldSelection.HostLobby=ownLobby;handoff=true;await SystemUI.LoadSceneAsync("Ingame");}
             catch(OperationCanceledException){}
             catch(Exception e){handoff=false;busy=false;status.text=e.Message;UpdateState();}
         }

@@ -23,6 +23,7 @@ namespace DoHwa.World
     {
         [SerializeField] private NetworkManager network;
         [SerializeField] private WorldRuntime world;
+        [SerializeField] private WorldMapSession maps;
         [SerializeField] private HeroMotor hero;
         [SerializeField] private GameObject remoteAvatarPrefab;
         private readonly Dictionary<ulong, string> identities = new();
@@ -32,7 +33,7 @@ namespace DoHwa.World
         private float nextPose;
         private bool registered;
         private bool awaitingInitialSnapshot;
-        private WorldState offlineState;
+        private string offlineSnapshot;
 
         private void Awake()
         {
@@ -82,7 +83,7 @@ namespace DoHwa.World
             if (client == network.LocalClientId)
             {
                 awaitingInitialSnapshot = !network.IsServer;
-                offlineState = JsonUtility.FromJson<WorldState>(JsonUtility.ToJson(world.State));
+                if (awaitingInitialSnapshot) offlineSnapshot = JsonUtility.ToJson(world.State);
                 world.LocalPlayerId = Encoding.UTF8.GetString(network.NetworkConfig.ConnectionData);
                 if (network.IsServer)
                 {
@@ -107,21 +108,19 @@ namespace DoHwa.World
             avatars.Clear(); registered = false;
             bool wasGuest = !world.IsAuthority;
             world.IsAuthority = true;
-            if (wasGuest && offlineState != null)
-            {
-                world.ApplySnapshot(JsonUtility.ToJson(offlineState));
-                hero.TryGetComponent<CharacterController>(out var body);
-                body.enabled = false;
-                hero.transform.position = world.LocalPlayer.position;
-                body.enabled = true;
-            }
             world.LocalPlayerId = PlayerIdentity.Get();
             world.ActivePlayers.Clear(); world.ActivePlayers.Add(world.LocalPlayerId);
+            if (wasGuest && offlineSnapshot != null)
+            {
+                world.ApplySnapshot(offlineSnapshot);
+                offlineSnapshot = null;
+                hero.Teleport(world.LocalPlayer.position);
+            }
         }
 
         private void Update()
         {
-            if (!WorldMapSession.Instance.LocalMapReady || !network.IsListening || !network.IsConnectedClient || Time.unscaledTime < nextPose) return;
+            if (!maps.LocalMapReady || !network.IsListening || !network.IsConnectedClient || Time.unscaledTime < nextPose) return;
             nextPose = Time.unscaledTime + .1f;
             if (network.IsServer)
             {
@@ -163,10 +162,7 @@ namespace DoHwa.World
             world.ApplySnapshot(packet.snapshot);
             if (awaitingInitialSnapshot)
             {
-                hero.TryGetComponent<CharacterController>(out var body);
-                body.enabled = false;
-                hero.transform.position = world.LocalPlayer.position;
-                body.enabled = true;
+                hero.Teleport(world.LocalPlayer.position);
                 awaitingInitialSnapshot = false;
             }
             UpdateAvatars();
@@ -181,7 +177,7 @@ namespace DoHwa.World
 
         private void Broadcast()
         {
-            if (!WorldMapSession.Instance.LocalMapReady || !network.IsListening || !network.IsServer || !registered) return;
+            if (!maps.LocalMapReady || !network.IsListening || !network.IsServer || !registered) return;
             var active = new string[world.ActivePlayers.Count]; world.ActivePlayers.CopyTo(active);
             var packet = new CoopPacket { snapshot = JsonUtility.ToJson(world.State), activePlayers = active };
             foreach (ulong client in network.ConnectedClientsIds)
@@ -200,6 +196,7 @@ namespace DoHwa.World
                 {
                     var instance = Instantiate(remoteAvatarPrefab, player.position, Quaternion.identity);
                     instance.TryGetComponent<CoopAvatar>(out avatar);
+                    avatar.SetView(hero.ViewTransform);
                     avatars.Add(player.id, avatar);
                 }
                 avatar.gameObject.SetActive(true);

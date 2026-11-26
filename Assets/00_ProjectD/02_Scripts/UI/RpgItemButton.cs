@@ -5,7 +5,9 @@ namespace DoHwa.UI
 {
     public sealed class RpgItemButton : MonoBehaviour, UnityEngine.EventSystems.IPointerEnterHandler, UnityEngine.EventSystems.IPointerExitHandler, UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler
     {
-        [SerializeField] private RpgUiController owner;
+        public event System.Action<int> Selected;
+        public event System.Action<int> Hovered;
+        public event System.Action PointerLeft;
         [SerializeField] private bool quick;
         [SerializeField] private int index;
         [SerializeField] private UnityEngine.UI.Image art, border;
@@ -23,6 +25,9 @@ namespace DoHwa.UI
         private int displayedQuantity;
 
         [SerializeField] private UnityEngine.UI.Image cardFace, quantityBand, equippedBadge;
+#if UNITY_EDITOR
+        [SerializeField] private UnityEngine.UI.Image cardShadow;
+#endif
         public void ConfigureCard(UnityEngine.UI.Image face, UnityEngine.UI.Image band, UnityEngine.UI.Image badge) { cardFace=face; quantityBand=band; equippedBadge=badge; }
 
 
@@ -43,8 +48,6 @@ namespace DoHwa.UI
         public void ConfigureUnframed(bool value) => unframed=value;
         public void ConfigureSelectionMarker(UnityEngine.UI.Image value) => selectionMarker=value;
 
-        public void Configure(RpgUiController controller,bool quickSlot,UnityEngine.UI.Image icon,UnityEngine.UI.Image outline,TMP_Text quantity,TMP_Text status,UnityEngine.UI.Button target)
-        { owner=controller; quick=quickSlot; art=icon; border=outline; amount=quantity; equipped=status; button=target; }
 
         public void Show(int id,Sprite sprite,int quantity,bool selected,bool worn,bool showEmpty=false)
         {
@@ -70,16 +73,13 @@ namespace DoHwa.UI
             equipped.gameObject.SetActive(quick && worn);
             equipped.text=worn?"장착":""; button.interactable=id>=0 && (!quick || quantity>0);
             SyncAnimation();
-            if(quick && hovered) owner.ShowQuickTooltip(index);
+            if(quick && hovered) Hovered?.Invoke(index);
         }
-        public void Click() { if(quick) owner.UseQuick(index); else owner.Select(index); }
-        public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData) { hovered=true; SyncAnimation(); if(quick) owner.ShowQuickTooltip(index); }
-        public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData) { hovered=pressed=false; SyncAnimation(); if(quick) owner.HideQuickTooltip(); }
+        public void Click() { Selected?.Invoke(index); }
+        public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData) { hovered=true; SyncAnimation(); if(quick) Hovered?.Invoke(index); }
+        public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData) { hovered=pressed=false; SyncAnimation(); if(quick) PointerLeft?.Invoke(); }
         public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data) { if(data.button==UnityEngine.EventSystems.PointerEventData.InputButton.Left) pressed=true; SyncAnimation(); }
         public void OnPointerUp(UnityEngine.EventSystems.PointerEventData data) { pressed=false; SyncAnimation(); }
         private void OnDisable() { hovered=pressed=false; }
     }
 }
-
-
-

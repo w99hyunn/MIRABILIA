@@ -3,7 +3,6 @@ using UnityEngine.Rendering;
 
 namespace DoHwa
 {
-    [DefaultExecutionOrder(150)]
     public sealed class HeroProjectedShadow : MonoBehaviour
     {
         [SerializeField] private SpriteRenderer[] sources;
@@ -12,7 +11,8 @@ namespace DoHwa
         [SerializeField, Min(.1f)] private float contactRadius = .43f;
         private readonly RaycastHit[] groundHits = new RaycastHit[16];
         private Mesh contactMesh;
-        private MeshRenderer contactRenderer;
+        [SerializeField] private MeshFilter contactFilter;
+        [SerializeField] private MeshRenderer contactRenderer;
         private Vector3[] vertices;
         private Vector3 previousGround = Vector3.positiveInfinity;
         private float nextSurfaceUpdate;
@@ -38,20 +38,9 @@ namespace DoHwa
                 shadow.enabled = false;
                 shadow.shadowCastingMode = ShadowCastingMode.Off;
             }
-            var contact = new GameObject("Contact Shadow", typeof(MeshFilter), typeof(MeshRenderer));
-            contact.transform.SetParent(transform, false);
-            contact.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-            contact.transform.localScale = Vector3.one;
-            contact.TryGetComponent<MeshFilter>(out var filter);
-            contact.TryGetComponent<MeshRenderer>(out contactRenderer);
-            contactRenderer.sharedMaterial = shadows[0].sharedMaterial;
-            contactRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            contactRenderer.receiveShadows = false;
-            contactRenderer.lightProbeUsage = LightProbeUsage.Off;
-            contactRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
             contactMesh = new Mesh { name = "Terrain contact shadow" };
             contactMesh.MarkDynamic();
-            filter.sharedMesh = contactMesh;
+            contactFilter.sharedMesh = contactMesh;
             vertices = new Vector3[81];
             var uv = new Vector2[81];
             var triangles = new int[384];
@@ -90,7 +79,17 @@ namespace DoHwa
             return ground;
         }
 
+        private void OnEnable()
+        {
+            if (heroCamera) heroCamera.PoseApplied += RenderShadow;
+        }
+
         private void LateUpdate()
+        {
+            if (!heroCamera || !heroCamera.isActiveAndEnabled) RenderShadow();
+        }
+
+        private void RenderShadow()
         {
             bool visible = false;
             foreach (var source in sources) visible |= source.enabled && source.gameObject.activeInHierarchy;
@@ -120,6 +119,7 @@ namespace DoHwa
 
         private void OnDisable()
         {
+            if (heroCamera) heroCamera.PoseApplied -= RenderShadow;
             if (contactRenderer) contactRenderer.enabled = false;
         }
 

@@ -98,7 +98,7 @@ MonoBehaviour:
   buildings:
   - id: workbench
     title: "\uBAA9\uACF5 \uC791\uC5C5\uB300"
-    prefab: {fileID: 6674775252680477550, guid: e3f1ec408f81efe4da3829c1caf01ed4, type: 3}
+    prefab: {fileID: 1719674595302674007, guid: e3f1ec408f81efe4da3829c1caf01ed4, type: 3}
     footprint: {x: 2, y: 1}
     station: 1
     cost:
@@ -109,7 +109,7 @@ MonoBehaviour:
     camp: {fileID: 0}
   - id: forge
     title: "\uC0B0\uACE8 \uB300\uC7A5\uAC04"
-    prefab: {fileID: 4154466674613596393, guid: ffde799b940cc6a4e86b2f3a1bf9e87e, type: 3}
+    prefab: {fileID: 3565485991427048142, guid: ffde799b940cc6a4e86b2f3a1bf9e87e, type: 3}
     footprint: {x: 3, y: 2}
     station: 3
     cost:
@@ -122,7 +122,7 @@ MonoBehaviour:
     camp: {fileID: 0}
   - id: fence
     title: "\uC0BC\uB098\uBB34 \uC6B8\uD0C0\uB9AC"
-    prefab: {fileID: 1526489081826330313, guid: 0ac40252c7bf3bd4998522fb91e378f6, type: 3}
+    prefab: {fileID: 924064178376885998, guid: 0ac40252c7bf3bd4998522fb91e378f6, type: 3}
     footprint: {x: 2, y: 1}
     station: 0
     cost:
@@ -133,7 +133,7 @@ MonoBehaviour:
     camp: {fileID: 0}
   - id: hearth
     title: "\uB3CC\uBAA8\uB2E5\uBD88"
-    prefab: {fileID: 6959587880091860757, guid: febe9679d022c564b8d6b7e44198b668, type: 3}
+    prefab: {fileID: 7734377580993868834, guid: febe9679d022c564b8d6b7e44198b668, type: 3}
     footprint: {x: 2, y: 2}
     station: 0
     cost:
@@ -146,7 +146,7 @@ MonoBehaviour:
     camp: {fileID: 11400000, guid: 275211481a7ece44fa72035fbbfb7637, type: 2}
   - id: herb-garden
     title: "\uC57D\uCD08\uBC2D"
-    prefab: {fileID: 2987842608444702625, guid: b1aca7542d1588448a449a1a3124ecea, type: 3}
+    prefab: {fileID: 8162119883358535527, guid: b1aca7542d1588448a449a1a3124ecea, type: 3}
     footprint: {x: 2, y: 2}
     station: 0
     cost:

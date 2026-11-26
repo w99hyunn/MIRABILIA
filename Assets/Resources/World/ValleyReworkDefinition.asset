@@ -25,9 +25,13 @@ MonoBehaviour:
   petals: {fileID: 139256737449224736, guid: a07f02cbac413fe42b904d791259e9f2, type: 3}
   boulder: {fileID: 60258082951884982, guid: 026925560361d8c47ab8dfa83d84bb72, type: 3}
   shrine: {fileID: 8849842736651532939, guid: 01484f3dde653ca41962feb197a3009c, type: 3}
+  terrainChunkPrefab: {fileID: 4965587444858807763, guid: caf00b5f7c5d63e47b735de5bd07de09, type: 3}
+  surfaceMeshPrefab: {fileID: 407246915062830308, guid: dcc38efbba286544391307eccd33dc14, type: 3}
+  oreResource: {fileID: 6805542312774075109, guid: 48186c2f402a399479b622b6b1040b69, type: 3}
   regions:
   - title: "\uB3C4\uD654\uB9BC"
     sceneName: PeachValley
+    editorScene: {fileID: 102900000, guid: 13b3e00b147aa6647912616573a414b7, type: 3}
     climate: "\uBD04 / \uB9D1\uC74C"
     groundCover: 1
     center: {x: 0, y: 20}
@@ -46,10 +50,11 @@ MonoBehaviour:
     - {fileID: 8432621190586081844, guid: e9709ac143875f64e8e4822782b46e17, type: 3}
     vegetationCount: 48
     blossoms: 1
-    timber: 1
+    timberResource: {fileID: 1527154472600754315, guid: 8dc604392ae6f3245b6bfe1face1ae27, type: 3}
     lakeRadius: 0
   - title: "\uCCAD\uC8FD\uD574"
     sceneName: JadeBambooSea
+    editorScene: {fileID: 102900000, guid: ae12f78601cc0844395e09a74a8f48fa, type: 3}
     climate: "\uCD08\uC5EC\uB984 / \uB9D1\uC74C"
     groundCover: 1
     center: {x: 0, y: 650}
@@ -68,10 +73,11 @@ MonoBehaviour:
     - {fileID: 8432621190586081844, guid: e9709ac143875f64e8e4822782b46e17, type: 3}
     vegetationCount: 48
     blossoms: 0
-    timber: 1
+    timberResource: {fileID: 6630881940699647208, guid: 2502255fdc610be4dbe77aa944ebb1d3, type: 3}
     lakeRadius: 0
   - title: "\uD64D\uC5FD \uACE0\uC6D0"
     sceneName: CrimsonHighland
+    editorScene: {fileID: 102900000, guid: ac3530d188fba094a89bb1e1559b8c03, type: 3}
     climate: "\uAC00\uC744 / \uB9D1\uC74C"
     groundCover: 1
     center: {x: -1000, y: 800}
@@ -90,10 +96,11 @@ MonoBehaviour:
     - {fileID: 813454236466520218, guid: 40880735ce3fcb64da092590ca463f32, type: 3}
     vegetationCount: 36
     blossoms: 0
-    timber: 1
+    timberResource: {fileID: 2162948676169617977, guid: 46a62062e5a9bd742b460d34f3407966, type: 3}
     lakeRadius: 0
   - title: "\uC740\uAC08\uB300 \uC5EC\uC6B8"
     sceneName: SilverReedMarsh
+    editorScene: {fileID: 102900000, guid: b804c45edabbd6e4abf62c8525e09391, type: 3}
     climate: "\uCD08\uC5EC\uB984 / \uB9D1\uC74C"
     groundCover: 1
     center: {x: 1100, y: 300}
@@ -112,10 +119,11 @@ MonoBehaviour:
     - {fileID: 8432621190586081844, guid: e9709ac143875f64e8e4822782b46e17, type: 3}
     vegetationCount: 45
     blossoms: 0
-    timber: 0
+    timberResource: {fileID: 0}
     lakeRadius: 100
   - title: "\uC6B4\uBB34 \uC11D\uB9BC"
     sceneName: CloudStoneForest
+    editorScene: {fileID: 102900000, guid: af6e323efc359c342ad61b6ee64f0636, type: 3}
     climate: "\uBD04 / \uB9D1\uC74C"
     groundCover: 1
     center: {x: 200, y: 2400}
@@ -134,10 +142,11 @@ MonoBehaviour:
     - {fileID: 8432621190586081844, guid: e9709ac143875f64e8e4822782b46e17, type: 3}
     vegetationCount: 24
     blossoms: 0
-    timber: 1
+    timberResource: {fileID: 814471486232487864, guid: 0b9f39cc83f961b4fb6f550a8742c6e1, type: 3}
     lakeRadius: 0
   - title: "\uBC31\uB839 \uC124\uC0B0"
     sceneName: WhiteSpiritMountain
+    editorScene: {fileID: 102900000, guid: a450c7e1f7fd01e4c9af8583137da23a, type: 3}
     climate: "\uACA8\uC6B8 / \uB9D1\uC74C"
     groundCover: 0
     center: {x: -2000, y: 4500}
@@ -156,10 +165,11 @@ MonoBehaviour:
     - {fileID: 8432621190586081844, guid: e9709ac143875f64e8e4822782b46e17, type: 3}
     vegetationCount: 12
     blossoms: 0
-    timber: 1
+    timberResource: {fileID: 5101963105426376494, guid: ccdc80ec762818e449223490e28c0f28, type: 3}
     lakeRadius: 0
   - title: "\uD669\uD63C \uB2E8\uD48D\uB9BC"
     sceneName: TwilightMapleForest
+    editorScene: {fileID: 102900000, guid: fc8036ab7ac251d4da1a1e7e785f5b6e, type: 3}
     climate: "\uAC00\uC744 / \uB9D1\uC74C"
     groundCover: 1
     center: {x: -3400, y: -2200}
@@ -178,10 +188,11 @@ MonoBehaviour:
     - {fileID: 813454236466520218, guid: 40880735ce3fcb64da092590ca463f32, type: 3}
     vegetationCount: 40
     blossoms: 0
-    timber: 1
+    timberResource: {fileID: 2162948676169617977, guid: 46a62062e5a9bd742b460d34f3407966, type: 3}
     lakeRadius: 0
   - title: "\uC625\uBE5B \uB300\uC232"
     sceneName: EmeraldBambooWilds
+    editorScene: {fileID: 102900000, guid: 29b26c44067583d4ea35a4f9dd783cec, type: 3}
     climate: "\uCD08\uC5EC\uB984 / \uB9D1\uC74C"
     groundCover: 1
     center: {x: 3700, y: -2400}
@@ -200,10 +211,11 @@ MonoBehaviour:
     - {fileID: 8432621190586081844, guid: e9709ac143875f64e8e4822782b46e17, type: 3}
     vegetationCount: 48
     blossoms: 0
-    timber: 1
+    timberResource: {fileID: 6630881940699647208, guid: 2502255fdc610be4dbe77aa944ebb1d3, type: 3}
     lakeRadius: 0
   - title: "\uBE44\uCDE8 \uCC9C\uBD09"
     sceneName: JadePeaks
+    editorScene: {fileID: 102900000, guid: 1441192178163b1488c0a2431a28c85f, type: 3}
     climate: "\uBD04 / \uB9D1\uC74C"
     groundCover: 1
     center: {x: 3900, y: 3300}
@@ -222,7 +234,7 @@ MonoBehaviour:
     - {fileID: 8432621190586081844, guid: e9709ac143875f64e8e4822782b46e17, type: 3}
     vegetationCount: 18
     blossoms: 0
-    timber: 1
+    timberResource: {fileID: 814471486232487864, guid: 0b9f39cc83f961b4fb6f550a8742c6e1, type: 3}
     lakeRadius: 0
   routes:
   - {x: 0, y: 1}

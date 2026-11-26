@@ -10,15 +10,21 @@ namespace DoHwa.UI
         [SerializeField] private EquipmentSlotFeedback slotFeedback;
         [SerializeField] private TMP_Text title;
         [SerializeField] private TMP_Text state;
-        public void Bind(string label, Sprite sprite, bool selected, bool equipped, System.Action choose)
+        private WardrobePanel panel;
+        private string itemId;
+
+        private void Awake() => button.onClick.AddListener(Choose);
+        private void Choose() => panel.Choose(itemId);
+
+        public void Bind(WardrobePanel owner, string id, string label, Sprite sprite, bool selected, bool equipped)
         {
+            panel = owner;
+            itemId = id;
             title.text = label;
             icon.sprite = sprite;
             icon.enabled = sprite;
             state.text = selected ? "선택됨" : equipped ? "착용 중" : "미리 입기";
             slotFeedback.SetState(selected, sprite);
-            button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(() => choose());
         }
     }
 }

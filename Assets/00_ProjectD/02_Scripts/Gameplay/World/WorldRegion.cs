@@ -8,6 +8,10 @@ namespace DoHwa.World
     {
         public string title;
         public string sceneName;
+#if UNITY_EDITOR
+        [SerializeField] private UnityEditor.SceneAsset editorScene;
+        public UnityEditor.SceneAsset EditorScene => editorScene;
+#endif
         public string climate="봄 / 맑음";
         public bool groundCover=true;
         public Vector2 center;
@@ -24,11 +28,7 @@ namespace DoHwa.World
         public GameObject[] roadsideProps=Array.Empty<GameObject>();
         public int vegetationCount=48;
         public bool blossoms;
-        public bool timber=true;
+        public WorldResource timberResource;
         public float lakeRadius;
     }
 }
-
-
-
-

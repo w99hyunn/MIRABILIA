@@ -3,7 +3,6 @@ using UnityEngine.InputSystem;
 
 namespace DoHwa
 {
-    [DefaultExecutionOrder(100)]
     public sealed class HeroCamera : MonoBehaviour
     {
         [SerializeField] private Transform target;
@@ -115,6 +114,8 @@ namespace DoHwa
             ApplyPose();
         }
 
+        public event System.Action PoseApplied;
+
         private void ApplyPose()
         {
             transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
@@ -136,6 +137,7 @@ namespace DoHwa
             }
             // Anchor the visible soles, rather than the controller's skin or sprite canvas origin.
             spriteVisual.position = GroundPoint + Vector3.up * .003f - spriteVisual.up * footHeight;
+            PoseApplied?.Invoke();
         }
     }
 }

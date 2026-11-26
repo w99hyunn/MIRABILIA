@@ -12,6 +12,9 @@ namespace DoHwa.World
         public Material ground;
         public Material water;
         public GameObject peachTree,bamboo,pine,grass,petals,boulder,shrine;
+        public MeshFilter terrainChunkPrefab;
+        public MeshFilter surfaceMeshPrefab;
+        public WorldResource oreResource;
         public WorldRegion[] regions;
         public Vector2Int[] routes;
         public Rect starter=new(-37,-25,74,90);
@@ -160,8 +163,3 @@ namespace DoHwa.World
         }
     }
 }
-
-
-
-
-

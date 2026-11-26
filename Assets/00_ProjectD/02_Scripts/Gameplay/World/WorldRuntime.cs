@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DoHwa.World
@@ -17,16 +18,17 @@ namespace DoHwa.World
         public int quantity;
     }
 
-    [DefaultExecutionOrder(-1000)]
     public sealed class WorldRuntime : MonoBehaviour
     {
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private HeroMotor hero;
         public HeroMotor Hero => hero;
-        public static WorldRuntime Instance { get; private set; }
         public WorldEnemy[] Enemies { get; private set; } = Array.Empty<WorldEnemy>();
         [SerializeField] private string saveSlot = "peach-valley";
-        private readonly Dictionary<string, GameObject> buildingViews = new();
+        private readonly Dictionary<string, WorldBuilding> buildingViews = new();
+        public IReadOnlyCollection<WorldBuilding> Buildings => buildingViews.Values;
+        private WorldGardenSite[] gardens = Array.Empty<WorldGardenSite>();
+        private readonly List<WorldResource> streamedResources = new();
         private readonly List<WorldResource> resources = new();
         public IReadOnlyList<WorldResource> Resources => resources;
         private WorldSupplyCache[] caches = Array.Empty<WorldSupplyCache>();
@@ -34,15 +36,21 @@ namespace DoHwa.World
         public System.Collections.Generic.IReadOnlyList<WorldSupplyCache> Caches => caches;
         public void RegisterResource(WorldResource node)
         {
+            streamedResources.Add(node);
             resources.Add(node);
             node.SetAvailable(!State.resources.Exists(r=>r.id==node.Id));
         }
-        public void UnregisterResource(WorldResource node) => resources.Remove(node);
+        public void UnregisterResource(WorldResource node)
+        {
+            streamedResources.Remove(node);
+            resources.Remove(node);
+        }
         private float saveAt;
         private float survivalElapsed;
 
         public GameCatalog Catalog => catalog;
-        public WorldState State { get; private set; }
+        private WorldState state;
+        public WorldState State => state ??= LoadState();
         public bool IsAuthority { get; set; } = true;
         public string LocalPlayerId { get; set; } = "local";
         public readonly HashSet<string> ActivePlayers = new() { "local" };
@@ -51,35 +59,40 @@ namespace DoHwa.World
         public event Action<WorldCommand, bool, string> Result;
         public event Action<WorldCommand> RemoteCommand;
 
-        private void Awake()
+        private WorldState LoadState()
         {
-            Instance = this;
             saveSlot = WorldSelection.Slot;
-            State = WorldSave.Read(saveSlot);
-            foreach (var player in State.players)
+            var loaded = WorldSave.Read(saveSlot);
+            foreach (var player in loaded.players)
                 if (string.IsNullOrEmpty(player.mapScene)) player.mapScene = WorldMapSession.LegacyMap(player.position);
-            foreach (var building in State.buildings)
+            foreach (var building in loaded.buildings)
                 if (string.IsNullOrEmpty(building.mapScene)) building.mapScene = WorldMapSession.LegacyMap(building.position);
             LocalPlayerId = PlayerIdentity.Get();
-            var legacy = State.Player(PlayerPrefs.GetString("WorldPlayerIdentity", "local")) ?? State.Player("local");
-            if (State.Player(LocalPlayerId) == null && legacy != null)
+            var legacy = loaded.Player(PlayerPrefs.GetString("WorldPlayerIdentity", "local")) ?? loaded.Player("local");
+            if (loaded.Player(LocalPlayerId) == null && legacy != null)
             {
-                foreach (var building in State.buildings)
+                foreach (var building in loaded.buildings)
                     if (building.owner == legacy.id) building.owner = LocalPlayerId;
                 legacy.id = LocalPlayerId;
             }
             ActivePlayers.Clear(); ActivePlayers.Add(LocalPlayerId);
-            State.GetOrCreatePlayer(LocalPlayerId, catalog);
-            Reconcile();
+            loaded.GetOrCreatePlayer(LocalPlayerId, catalog);
+            return loaded;
         }
 
-        public void RefreshMapObjects()
+        private WorldMapEnvironment[] activeMaps = Array.Empty<WorldMapEnvironment>();
+
+        public void RefreshMapObjects(IEnumerable<WorldMapEnvironment> environments)
         {
-            Gates = FindObjectsByType<DokkaebiGate>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            caches = FindObjectsByType<WorldSupplyCache>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            Enemies = FindObjectsByType<WorldEnemy>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            activeMaps = environments.ToArray();
+            Gates = activeMaps.SelectMany(map => map.Gates).ToArray();
+            caches = activeMaps.SelectMany(map => map.Caches).ToArray();
+            Enemies = activeMaps.SelectMany(map => map.Enemies).ToArray();
+            gardens = activeMaps.SelectMany(map => map.Gardens).ToArray();
             resources.Clear();
-            resources.AddRange(FindObjectsByType<WorldResource>(FindObjectsInactive.Include, FindObjectsSortMode.None));
+            resources.AddRange(activeMaps.SelectMany(map => map.Resources));
+            streamedResources.RemoveAll(resource => !resource);
+            resources.AddRange(streamedResources);
             Reconcile(); Changed?.Invoke();
         }
         private void Update()
@@ -102,7 +115,6 @@ namespace DoHwa.World
         }
 
         private void OnApplicationQuit() { if (IsAuthority) Save(); }
-        private void OnDestroy() { if (Instance == this) Instance = null; }
         public void Save() { WorldSave.Write(State, saveSlot); saveAt = Time.unscaledTime + 20; }
 
         public void Submit(WorldCommand command)
@@ -132,7 +144,7 @@ namespace DoHwa.World
                     var gate = Array.Find(Gates, g => g.Id == command.target);
                     if (!gate || !gate.isActiveAndEnabled || Vector3.Distance(player.position, gate.transform.position) > 3f)
                     { reason = "도깨비불 가까이에서 거래하세요"; return false; }
-                    success = gate.Interact(player, out reason);
+                    success = gate.Interact(State, catalog, player, out reason);
                     break;
                 case WorldAction.OpenCache:
                     var cache = Array.Find(caches, c => c.Id == command.target);
@@ -159,7 +171,7 @@ namespace DoHwa.World
                     break;
                 case WorldAction.Craft:
                     var recipe = catalog.Recipe(command.target);
-                    var station = recipe != null && HasStation(player.position, recipe.station) ? recipe.station : StationKind.Hand;
+                    var station = recipe != null && HasStation(player, recipe.station) ? recipe.station : StationKind.Hand;
                     success = WorldRules.Craft(player, catalog, recipe, station, command.quantity == 0 ? 1 : command.quantity, out reason);
                     if (success) JourneyDefinition.Record(State, WorldAction.Craft, recipe.id,
                         recipe.result.item, recipe.result.amount * (command.quantity == 0 ? 1 : command.quantity));
@@ -174,7 +186,7 @@ namespace DoHwa.World
                     break;
                 case WorldAction.Upgrade:
                     success = WorldRules.Upgrade(player, catalog, command.item,
-                        HasStation(player.position, StationKind.Forge) ? StationKind.Forge : StationKind.Hand, out reason);
+                        HasStation(player, StationKind.Forge) ? StationKind.Forge : StationKind.Hand, out reason);
                     break;
                 case WorldAction.Consume:
                     success = SurvivalRules.Consume(player, catalog, command.item, out reason);
@@ -192,30 +204,11 @@ namespace DoHwa.World
             return success;
         }
 
-        public StationKind NearestStation(Vector3 position)
-        {
-            float distance = 4f;
-            StationKind station = StationKind.Hand;
-            foreach (var building in State.buildings)
-            {
-                float next = Vector3.Distance(position, building.position);
-                var candidate = catalog.Building(building.definition).station;
-                if (next < distance && candidate != StationKind.Hand) { station = candidate; distance = next; }
-            }
-            return station;
-        }
-
-        public bool HasStation(Vector3 position, StationKind station)
-        {
-            if (station == StationKind.Hand) return true;
-            foreach (var building in State.buildings)
-                if ((building.position - position).sqrMagnitude < 16f && catalog.Building(building.definition).station == station)
-                    return true;
-            return false;
-        }
+        public bool HasStation(SurvivorState player, StationKind station) =>
+            WorldRules.HasStation(State, player, catalog, station);
 
         public int MaxCraftCount(CraftRecipe recipe) => WorldRules.MaxCraftCount(LocalPlayer, catalog, recipe,
-            HasStation(LocalPlayer.position, recipe.station) ? recipe.station : StationKind.Hand);
+            HasStation(LocalPlayer, recipe.station) ? recipe.station : StationKind.Hand);
 
         public bool CanPlace(string definition, Vector3 position, int turns, out string reason)
         {
@@ -240,9 +233,9 @@ namespace DoHwa.World
 
         public void ApplySnapshot(string json)
         {
-            var next = JsonUtility.FromJson<WorldState>(json);
+            var next = WorldState.FromJson(json);
             bool changed = next.id != State.id || next.revision != State.revision || next.seed != State.seed;
-            State = next;
+            state = next;
             if (changed) { Reconcile(); Changed?.Invoke(); }
         }
 
@@ -255,7 +248,8 @@ namespace DoHwa.World
 
         private void Reconcile()
         {
-            foreach (var site in FindObjectsByType<WorldGardenSite>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (var map in activeMaps) map.Render(State);
+            foreach (var site in gardens)
             {
                 var state = State.buildings.Find(b => b.id == site.PersistentId);
                 if (state == null)
@@ -268,15 +262,19 @@ namespace DoHwa.World
                     State.revision++;
                 }
                 if (buildingViews.TryGetValue(state.id, out var existing) && existing) continue;
-                if (!site.TryGetComponent<WorldBuilding>(out var view)) view = site.gameObject.AddComponent<WorldBuilding>();
-                view.Bind(state, catalog.Building(state.definition));
-                buildingViews[state.id] = site.gameObject;
+                var view = site.Building;
+                view.Bind(this, state, catalog.Building(state.definition));
+                buildingViews[state.id] = view;
             }
             foreach (var node in resources)
                 if (node) node.SetAvailable(!State.resources.Exists(r => r.id == node.Id));
             var removed = new List<string>();
             foreach (var view in buildingViews)
-                if (!view.Value || !State.buildings.Exists(b => b.id == view.Key)) { Destroy(view.Value); removed.Add(view.Key); }
+                if (!view.Value || !State.buildings.Exists(b => b.id == view.Key))
+                {
+                    if (view.Value) Destroy(view.Value.gameObject);
+                    removed.Add(view.Key);
+                }
             foreach (string id in removed) buildingViews.Remove(id);
             foreach (var state in State.buildings)
             {
@@ -284,10 +282,10 @@ namespace DoHwa.World
                 var map = UnityEngine.SceneManagement.SceneManager.GetSceneByName(state.mapScene);
                 if (!map.IsValid() || !map.isLoaded) continue;
                 var spec = catalog.Building(state.definition);
-                var instance = Instantiate(spec.prefab, state.position, Quaternion.Euler(0, state.quarterTurns * 90, 0));
-                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(instance, map);
-                instance.AddComponent<WorldBuilding>().Bind(state, spec);
-                buildingViews.Add(state.id, instance);
+                var view = Instantiate(spec.prefab, state.position, Quaternion.Euler(0, state.quarterTurns * 90, 0));
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(view.gameObject, map);
+                view.Bind(this, state, spec);
+                buildingViews.Add(state.id, view);
             }
         }
     }
